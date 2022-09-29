@@ -467,9 +467,7 @@ void LORDiscretization::FormLORSpace()
    mesh = new Mesh(Mesh::MakeRefined(mesh_ho, refinements, ref_type));
 
    fec = fes_ho.FEColl()->Clone(GetLOROrder());
-   const int vdim = fes_ho.GetVDim();
-   const Ordering::Type ordering = fes_ho.GetOrdering();
-   fes = new FiniteElementSpace(mesh, fec, vdim, ordering);
+   fes = new FiniteElementSpace(mesh, fec);
    SetupProlongationAndRestriction();
 }
 
@@ -513,9 +511,8 @@ void ParLORDiscretization::FormLORSpace()
    mesh = pmesh;
 
    fec = pfes_ho.FEColl()->Clone(GetLOROrder());
-   const int vdim = fes_ho.GetVDim();
-   const Ordering::Type ordering = fes_ho.GetOrdering();
-   fes = new ParFiniteElementSpace(pmesh, fec, vdim, ordering);
+   ParFiniteElementSpace *pfes = new ParFiniteElementSpace(pmesh, fec);
+   fes = pfes;
    SetupProlongationAndRestriction();
 }
 

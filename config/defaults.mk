@@ -42,9 +42,6 @@ STATIC = YES
 SHARED = NO
 
 # CUDA configuration options
-#
-# If you set MFEM_USE_ENZYME=YES, CUDA_CXX has to be configured to use cuda with
-# clang as its host compiler.
 CUDA_CXX = nvcc
 CUDA_ARCH = sm_60
 CUDA_FLAGS = -x=cu --expt-extended-lambda -arch=$(CUDA_ARCH)
@@ -166,7 +163,6 @@ MFEM_USE_ADFORWARD     = NO
 MFEM_USE_CODIPACK      = NO
 MFEM_USE_BENCHMARK     = NO
 MFEM_USE_PARELAG       = NO
-MFEM_USE_ENZYME        = NO
 
 # MPI library compile and link flags
 # These settings are used only when building MFEM with MPI + HIP
@@ -179,7 +175,7 @@ ifeq ($(MFEM_USE_MPI)$(MFEM_USE_HIP),YESYES)
 endif
 
 # ROCM/HIP directory such that ROCM/HIP libraries like rocsparse and rocrand are
-# found in $(HIP_DIR)/lib, usually as links. Typically, this directory is of
+# found in $(HIP_DIR)/lib, usually as links. Typically, this directoory is of
 # the form /opt/rocm-X.Y.Z which is called ROCM_PATH by hipconfig.
 ifeq ($(MFEM_USE_HIP),YES)
    HIP_DIR := $(patsubst %/,%,$(dir $(shell which $(HIP_CXX))))
@@ -309,7 +305,7 @@ SCALAPACK_LIB = -L$(SCALAPACK_DIR)/lib -lscalapack $(LAPACK_LIB)
 MPI_FORTRAN_LIB = -lmpifort
 # OpenMPI:
 # MPI_FORTRAN_LIB = -lmpi_mpifh
-# Additional Fortran library:
+# Additional Fortan library:
 # MPI_FORTRAN_LIB += -lgfortran
 
 # MUMPS library configuration
@@ -523,22 +519,6 @@ MKL_CPARDISO_LIB = $(XLINKER)-rpath,$(MKL_CPARDISO_DIR)/$(MKL_LIBRARY_SUBDIR)\
 PARELAG_DIR = @MFEM_DIR@/../parelag
 PARELAG_OPT = -I$(PARELAG_DIR)/src -I$(PARELAG_DIR)/build/src
 PARELAG_LIB = -L$(PARELAG_DIR)/build/src -lParELAG
-
-# Enzyme configuration
-
-# If you want to enable automatic differentiation at compile time, use the
-# options below, adapted to your configuration. To be more flexible, we
-# recommend using the Enzyme plugin during link time optimization. One option is
-# to add your options to the global compiler/linker flags like
-#
-# BASE_FLAGS += -flto
-# CXX_XLINKER += -fuse-ld=lld -Wl,--lto-legacy-pass-manager\
-#                -Wl,-mllvm=-load=$(ENZYME_DIR)/LLDEnzyme-$(ENZYME_VERSION).so -Wl,
-#
-ENZYME_DIR ?= @MFEM_DIR@/../enzyme
-ENZYME_VERSION ?= 14
-ENZYME_OPT = -fno-experimental-new-pass-manager -Xclang -load -Xclang $(ENZYME_DIR)/ClangEnzyme-$(ENZYME_VERSION).so
-ENZYME_LIB = ""
 
 # If YES, enable some informational messages
 VERBOSE = NO

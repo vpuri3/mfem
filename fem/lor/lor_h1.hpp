@@ -21,6 +21,9 @@ namespace mfem
 // classes BatchedLORAssembly and BatchedLORKernel .
 class BatchedLOR_H1 : BatchedLORKernel
 {
+protected:
+   // TODO: for now only supporting constant coefficients
+   double mass_coeff, diffusion_coeff;
 public:
    template <int ORDER> void Assemble2D();
    template <int ORDER> void Assemble3D();

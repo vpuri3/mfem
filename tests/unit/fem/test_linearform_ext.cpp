@@ -16,36 +16,9 @@
 
 using namespace mfem;
 
-static double f(const Vector &xvec)
-{
-   const int dim = xvec.Size();
-   double val = 2*xvec[0];
-   if (dim >= 2)
-   {
-      val += 3*xvec[1]*xvec[0];
-   }
-   if (dim >= 3)
-   {
-      val += 0.25*xvec[2]*xvec[1];
-   }
-   return val;
-}
-
-static void fvec_dim(const Vector &xvec, Vector &v)
-{
-   v.SetSize(xvec.Size());
-   for (int d = 0; d < xvec.Size(); ++d)
-   {
-      v[d] = f(xvec) / double(d + 1);
-   }
-}
-
 struct LinearFormExtTest
 {
-   enum { DLFEval, QLFEval, DLFGrad, // scalar domain
-          VDLFEval, VQLFEval, VDLFGrad, // vector domain
-          BLFEval, BNLFEval // boundary
-        };
+   enum { DLFEval, QLFEval, DLFGrad, VDLFEval, VQLFEval, VDLFGrad };
    const double abs_tol = 1e-14, rel_tol = 1e-14;
    const char *mesh_filename;
    Mesh mesh;
@@ -56,10 +29,9 @@ struct LinearFormExtTest
    IntegrationRules IntRulesGLL;
    const IntegrationRule *irGLL, *ir;
    Array<int> elem_marker;
-   Vector vdim_vec, vdim_dim_vec;
-   FunctionCoefficient fn_coeff;
-   VectorFunctionCoefficient dim_fn_coeff;
-   VectorConstantCoefficient vdim_cst_coeff, vdim_dim_cst_coeff;
+   Vector one_vec, dim_vec, vdim_vec, vdim_dim_vec;
+   ConstantCoefficient cst_coeff;
+   VectorConstantCoefficient dim_cst_coeff, vdim_cst_coeff, vdim_dim_cst_coeff;
    QuadratureSpace qspace;
    QuadratureFunction q_function, q_vdim_function;
    QuadratureFunctionCoefficient qfc;
@@ -77,8 +49,8 @@ struct LinearFormExtTest
       geom_type(vfes.GetFE(0)->GetGeomType()),
       IntRulesGLL(0, Quadrature1D::GaussLobatto),
       irGLL(&IntRulesGLL.Get(geom_type, q)), ir(&IntRules.Get(geom_type, q)),
-      elem_marker(), vdim_vec(vdim), vdim_dim_vec(vdim*dim),
-      fn_coeff(f), dim_fn_coeff(dim, fvec_dim),
+      elem_marker(), one_vec(1), dim_vec(dim), vdim_vec(vdim), vdim_dim_vec(vdim*dim),
+      cst_coeff(M_PI), dim_cst_coeff((dim_vec.Randomize(SEED), dim_vec)),
       vdim_cst_coeff((vdim_vec.Randomize(SEED), vdim_vec)),
       vdim_dim_cst_coeff((vdim_dim_vec.Randomize(SEED), vdim_dim_vec)),
       qspace(&mesh, q),
@@ -97,8 +69,8 @@ struct LinearFormExtTest
 
       if (problem == DLFEval)
       {
-         lfi_dev = new DomainLFIntegrator(fn_coeff);
-         lfi_std = new DomainLFIntegrator(fn_coeff);
+         lfi_dev = new DomainLFIntegrator(cst_coeff);
+         lfi_std = new DomainLFIntegrator(cst_coeff);
       }
       else if (problem == QLFEval)
       {
@@ -107,8 +79,8 @@ struct LinearFormExtTest
       }
       else if (problem == DLFGrad)
       {
-         lfi_dev = new DomainLFGradIntegrator(dim_fn_coeff);
-         lfi_std = new DomainLFGradIntegrator(dim_fn_coeff);
+         lfi_dev = new DomainLFGradIntegrator(dim_cst_coeff);
+         lfi_std = new DomainLFGradIntegrator(dim_cst_coeff);
       }
       else if (problem == VDLFEval)
       {
@@ -125,42 +97,16 @@ struct LinearFormExtTest
          lfi_dev = new VectorDomainLFGradIntegrator(vdim_dim_cst_coeff);
          lfi_std = new VectorDomainLFGradIntegrator(vdim_dim_cst_coeff);
       }
-      else if (problem == BLFEval)
-      {
-         lfi_dev = new BoundaryLFIntegrator(fn_coeff);
-         lfi_std = new BoundaryLFIntegrator(fn_coeff);
-      }
-      else if (problem == BNLFEval)
-      {
-         lfi_dev = new BoundaryNormalLFIntegrator(dim_fn_coeff);
-         lfi_std = new BoundaryNormalLFIntegrator(dim_fn_coeff);
-      }
       else { REQUIRE(false); }
 
-      if (problem != QLFEval && problem != VQLFEval && problem != BLFEval &&
-          problem != BNLFEval)
+      if (problem != QLFEval && problem != VQLFEval)
       {
          lfi_dev->SetIntRule(gll ? irGLL : ir);
          lfi_std->SetIntRule(gll ? irGLL : ir);
       }
 
-      if (problem != BLFEval && problem != BNLFEval)
-      {
-         lf_dev.AddDomainIntegrator(lfi_dev, elem_marker);
-         lf_std.AddDomainIntegrator(lfi_std, elem_marker);
-      }
-      else
-      {
-         lf_dev.AddBoundaryIntegrator(lfi_dev);
-         lf_std.AddBoundaryIntegrator(lfi_std);
-      }
-
-      // Test accumulation of integrators
-      if (vdim == 1)
-      {
-         lf_dev.AddDomainIntegrator(new DomainLFIntegrator(fn_coeff));
-         lf_std.AddDomainIntegrator(new DomainLFIntegrator(fn_coeff));
-      }
+      lf_dev.AddDomainIntegrator(lfi_dev, elem_marker);
+      lf_std.AddDomainIntegrator(lfi_std, elem_marker);
    }
 
    void Run()
@@ -186,7 +132,7 @@ struct LinearFormExtTest
    }
 };
 
-TEST_CASE("Linear Form Extension", "[LinearFormExtension], [CUDA]")
+TEST_CASE("Linear Form Extension", "[LinearformExt], [CUDA]")
 {
    const bool all = launch_all_non_regression_tests;
 
@@ -195,21 +141,18 @@ TEST_CASE("Linear Form Extension", "[LinearFormExtension], [CUDA]")
                      "../../data/fichera.mesh", "../../data/fichera-q3.mesh") :
       GENERATE("../../data/star-q3.mesh", "../../data/fichera-q3.mesh");
    const auto p = all ? GENERATE(1,2,3,4,5,6) : GENERATE(1,3);
+   const auto gll = GENERATE(false, true);
 
    SECTION("Scalar")
    {
-      const auto gll = GENERATE(false, true);
       const auto problem = GENERATE(LinearFormExtTest::DLFEval,
                                     LinearFormExtTest::QLFEval,
-                                    LinearFormExtTest::DLFGrad,
-                                    LinearFormExtTest::BLFEval,
-                                    LinearFormExtTest::BNLFEval);
+                                    LinearFormExtTest::DLFGrad);
       LinearFormExtTest(mesh_file, 1, Ordering::byNODES, gll, problem, p).Run();
    }
 
    SECTION("Vector")
    {
-      const auto gll = GENERATE(false, true);
       const auto vdim = all ? GENERATE(1,5,7) : GENERATE(1,5);
       const auto ordering = GENERATE(Ordering::byVDIM, Ordering::byNODES);
       const auto problem = GENERATE(LinearFormExtTest::VDLFEval,
@@ -246,36 +189,6 @@ TEST_CASE("Linear Form Extension", "[LinearFormExtension], [CUDA]")
       d2.AddDomainIntegrator(new DomainLFIntegrator(norm2_grad_x));
       d2.Assemble(false);
 
-      d1 -= d2;
-
-      REQUIRE(d1.Norml2() == MFEM_Approx(0.0));
-   }
-
-   SECTION("L2 MapType")
-   {
-      auto map_type = GENERATE(FiniteElement::VALUE, FiniteElement::INTEGRAL);
-      Mesh mesh(mesh_file);
-      const int dim = mesh.Dimension();
-
-      CAPTURE(mesh_file, dim, p, map_type);
-
-      L2_FECollection fec(p, dim, BasisType::GaussLegendre, map_type);
-      FiniteElementSpace fes(&mesh, &fec);
-
-      ConstantCoefficient coeff(1.0);
-
-      LinearForm d1(&fes);
-      d1.AddDomainIntegrator(new DomainLFIntegrator(coeff));
-      d1.Assemble();
-
-      LinearForm d2(&fes);
-      d2.AddDomainIntegrator(new DomainLFIntegrator(coeff));
-      d2.Assemble(false);
-
-      CAPTURE(d1.Norml2(), d2.Norml2());
-
-      d1 -= d2;
-
-      REQUIRE(d1.Norml2() == MFEM_Approx(0.0));
+      REQUIRE(d1.Norml2() == MFEM_Approx(d2.Norml2()));
    }
 }

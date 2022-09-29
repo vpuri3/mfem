@@ -13,7 +13,7 @@
 #define ADMFEM_HPP
 
 #include "mfem.hpp"
-#include "../../linalg/dual.hpp"
+#include "fdual.hpp"
 #include "tadvector.hpp"
 #include "taddensemat.hpp"
 
@@ -438,7 +438,7 @@ namespace mfem
 namespace ad
 {
 /// MFEM native forward AD-type
-typedef internal::dual<double, double> ADFloatType;
+typedef FDualNumber<double> ADFloatType;
 /// Vector type for AD-type numbers
 typedef TAutoDiffVector<ADFloatType> ADVectorType;
 /// Matrix type for AD-type numbers
@@ -480,13 +480,13 @@ public:
 
          for (int ii = 0; ii < state_size; ii++)
          {
-            aduu[ii].gradient = 1.0;
+            aduu[ii].dual(1.0);
             F(vparam,aduu,rr);
             for (int jj = 0; jj < vector_size; jj++)
             {
-               jac(jj, ii) = rr[jj].gradient;
+               jac(jj, ii) = rr[jj].dual();
             }
-            aduu[ii].gradient = 0.0;
+            aduu[ii].dual(0.0);
          }
       }
    }
@@ -532,7 +532,7 @@ class QVectorFuncAutoDiff
 {
 private:
    /// MFEM native forward AD-type
-   typedef internal::dual<double, double> ADFType;
+   typedef ad::FDualNumber<double> ADFType;
    /// Vector type for AD-type numbers
    typedef TAutoDiffVector<ADFType> ADFVector;
    /// Matrix type for AD-type numbers
@@ -561,13 +561,13 @@ public:
 
          for (int ii = 0; ii < state_size; ii++)
          {
-            aduu[ii].gradient = 1.0;
+            aduu[ii].dual(1.0);
             Eval(vparam, aduu, rr);
             for (int jj = 0; jj < vector_size; jj++)
             {
-               jac(jj, ii) = rr[jj].gradient;
+               jac(jj, ii) = rr[jj].dual();
             }
-            aduu[ii].gradient = 0.0;
+            aduu[ii].dual(0.0);
          }
       }
    }
@@ -617,13 +617,13 @@ class QFunctionAutoDiff
 {
 private:
    /// MFEM native AD-type for first derivatives
-   typedef internal::dual<double, double> ADFType;
+   typedef ad::FDualNumber<double> ADFType;
    /// Vector type for AD-numbers(first derivatives)
    typedef TAutoDiffVector<ADFType> ADFVector;
    /// Matrix type for AD-numbers(first derivatives)
    typedef TAutoDiffDenseMatrix<ADFType> ADFDenseMatrix;
    /// MFEM native AD-type for second derivatives
-   typedef internal::dual<ADFType, ADFType> ADSType;
+   typedef ad::FDualNumber<ADFType> ADSType;
    /// Vector type for AD-numbers (second derivatives)
    typedef TAutoDiffVector<ADSType> ADSVector;
    /// Vector type for AD-numbers (second derivatives)
@@ -653,10 +653,10 @@ public:
       ADFType rez;
       for (int ii = 0; ii < n; ii++)
       {
-         aduu[ii].gradient = 1.0;
+         aduu[ii].dual(1.0);
          rez = ff(vparam, aduu);
-         rr[ii] = rez.gradient;
-         aduu[ii].gradient = 0.0;
+         rr[ii] = rez.dual();
+         aduu[ii].dual(0.0);
       }
    }
 
@@ -678,22 +678,22 @@ public:
          ADSVector aduu(n);
          for (int ii = 0; ii < n; ii++)
          {
-            aduu[ii].value = ADFType{uu[ii], 0.0};
-            aduu[ii].gradient = ADFType{0.0, 0.0};
+            aduu[ii].real(ADFType(uu[ii], 0.0));
+            aduu[ii].dual(ADFType(0.0, 0.0));
          }
 
          for (int ii = 0; ii < n; ii++)
          {
-            aduu[ii].value = ADFType{uu[ii], 1.0};
+            aduu[ii].real(ADFType(uu[ii], 1.0));
             for (int jj = 0; jj < (ii + 1); jj++)
             {
-               aduu[jj].gradient = ADFType{1.0, 0.0};
+               aduu[jj].dual(ADFType(1.0, 0.0));
                ADSType rez = sf(vparam, aduu);
-               jac(ii, jj) = rez.gradient.gradient;
-               jac(jj, ii) = rez.gradient.gradient;
-               aduu[jj].gradient = ADFType{0.0, 0.0};
+               jac(ii, jj) = rez.dual().dual();
+               jac(jj, ii) = rez.dual().dual();
+               aduu[jj].dual(ADFType(0.0, 0.0));
             }
-            aduu[ii].value = ADFType{uu[ii], 0.0};
+            aduu[ii].real(ADFType(uu[ii], 0.0));
          }
       }
    }

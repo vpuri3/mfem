@@ -240,7 +240,7 @@ public:
    virtual void Trim();
 
    /// Return total number of bytes allocated.
-   std::size_t MemoryUsage(bool with_base = true) const;
+   long MemoryUsage(bool with_base = true) const;
 
    int PrintMemoryDetail(bool with_base = true) const;
 
@@ -506,7 +506,7 @@ protected: // implementation
 
       void SetElements(const Array<int> &elems, NCMesh *ncmesh);
       void SetNCMesh(NCMesh* ncmesh) { eset.SetNCMesh(ncmesh); }
-      std::size_t MemoryUsage() const;
+      long MemoryUsage() const;
 
       typedef std::map<int, RebalanceDofMessage> Map;
 
@@ -540,7 +540,7 @@ protected: // implementation
    Array<DenseMatrix*> aux_pm_store;
    void ClearAuxPM();
 
-   std::size_t GroupsMemoryUsage() const;
+   long GroupsMemoryUsage() const;
 
    friend class NeighborRowMessage;
 };

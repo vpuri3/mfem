@@ -25,16 +25,12 @@ PANonlinearFormExtension::PANonlinearFormExtension(const NonlinearForm *nlf):
    NonlinearFormExtension(nlf),
    fes(*nlf->FESpace()),
    dnfi(*nlf->GetDNFI()),
-   elemR(nullptr),
+   elemR(fes.GetElementRestriction(ElementDofOrdering::LEXICOGRAPHIC)),
    Grad(*this)
 {
-   if (!DeviceCanUseCeed())
-   {
-      elemR = fes.GetElementRestriction(ElementDofOrdering::LEXICOGRAPHIC);
-      // TODO: optimize for the case when 'elemR' is identity
-      xe.SetSize(elemR->Height(), Device::GetMemoryType());
-      ye.SetSize(elemR->Height(), Device::GetMemoryType());
-   }
+   // TODO: optimize for the case when 'elemR' is identity
+   xe.SetSize(elemR->Height(), Device::GetMemoryType());
+   ye.SetSize(elemR->Height(), Device::GetMemoryType());
    ye.UseDevice(true);
 }
 
@@ -139,16 +135,13 @@ void PANonlinearFormExtension::Gradient::Update()
 MFNonlinearFormExtension::MFNonlinearFormExtension(const NonlinearForm *form):
    NonlinearFormExtension(form), fes(*form->FESpace())
 {
-   if (!DeviceCanUseCeed())
+   const ElementDofOrdering ordering = ElementDofOrdering::LEXICOGRAPHIC;
+   elem_restrict_lex = fes.GetElementRestriction(ordering);
+   if (elem_restrict_lex) // replace with a check for not identity
    {
-      const ElementDofOrdering ordering = ElementDofOrdering::LEXICOGRAPHIC;
-      elem_restrict_lex = fes.GetElementRestriction(ordering);
-      if (elem_restrict_lex) // replace with a check for not identity
-      {
-         localX.SetSize(elem_restrict_lex->Height(), Device::GetMemoryType());
-         localY.SetSize(elem_restrict_lex->Height(), Device::GetMemoryType());
-         localY.UseDevice(true); // ensure 'localY = 0.0' is done on device
-      }
+      localX.SetSize(elem_restrict_lex->Height(), Device::GetMemoryType());
+      localY.SetSize(elem_restrict_lex->Height(), Device::GetMemoryType());
+      localY.UseDevice(true); // ensure 'localY = 0.0' is done on device
    }
 }
 

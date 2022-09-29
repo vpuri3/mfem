@@ -526,11 +526,11 @@ int main(int argc, char *argv[])
       dacol->SetTime(pp);
       if (pp < 2.0)
       {
-         dacol->SetCycle(static_cast<int>(std::floor(pp)));
+         dacol->SetCycle(std::floor(pp));
       }
       else
       {
-         dacol->SetCycle(static_cast<int>(std::ceil(pp)));
+         dacol->SetCycle(std::ceil(pp));
       }
       dacol->Save();
    }

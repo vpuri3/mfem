@@ -12,6 +12,7 @@
 list(APPEND SEQADIFF_COMMON_SOURCES)
 
 list(APPEND SEQADIFF_COMMON_HEADERS
+        fdual.hpp
 	tadvector.hpp
 	taddensemat.hpp
 	admfem.hpp)

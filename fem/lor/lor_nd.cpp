@@ -33,14 +33,8 @@ void BatchedLOR_ND::Assemble2D()
    static constexpr int nnz_per_row = 7;
    static constexpr int sz_local_mat = ne*ne;
 
-   const bool const_mq = c1.Size() == 1;
-   const auto MQ = const_mq
-                   ? Reshape(c1.Read(), 1, 1, 1)
-                   : Reshape(c1.Read(), op1, op1, nel_ho);
-   const bool const_dq = c2.Size() == 1;
-   const auto DQ = const_dq
-                   ? Reshape(c2.Read(), 1, 1, 1)
-                   : Reshape(c2.Read(), op1, op1, nel_ho);
+   const double DQ = curl_curl_coeff;
+   const double MQ = mass_coeff;
 
    sparse_ij.SetSize(nnz_per_row*ndof_per_el*nel_ho);
    auto V = Reshape(sparse_ij.Write(), nnz_per_row, o*op1, dim, nel_ho);
@@ -112,8 +106,6 @@ void BatchedLOR_ND::Assemble2D()
             {
                for (int iqy=0; iqy<2; ++iqy)
                {
-                  const double mq = const_mq ? MQ(0,0,0) : MQ(kx+iqx, ky+iqy, iel_ho);
-                  const double dq = const_dq ? DQ(0,0,0) : DQ(kx+iqx, ky+iqy, iel_ho);
                   // Loop over x,y components. c=0 => x, c=1 => y
                   for (int cj=0; cj<dim; ++cj)
                   {
@@ -144,8 +136,8 @@ void BatchedLOR_ND::Assemble2D()
                               val += byi*bxj*Q(1,iqy,iqx);
                               val += bxi*byj*Q(1,iqy,iqx);
                               val += byi*byj*Q(2,iqy,iqx);
-                              val *= mq;
-                              val += dq*curl_i*curl_j*Q(3,iqy,iqx);
+                              val *= MQ;
+                              val += DQ*curl_i*curl_j*Q(3,iqy,iqx);
 
                               local_mat(ii_loc, jj_loc) += val;
                            }
@@ -232,14 +224,8 @@ void BatchedLOR_ND::Assemble3D()
    static constexpr int nnz_per_row = 33;
    static constexpr int sz_local_mat = ne*ne;
 
-   const bool const_mq = c1.Size() == 1;
-   const auto MQ = const_mq
-                   ? Reshape(c1.Read(), 1, 1, 1, 1)
-                   : Reshape(c1.Read(), op1, op1, op1, nel_ho);
-   const bool const_dq = c2.Size() == 1;
-   const auto DQ = const_dq
-                   ? Reshape(c2.Read(), 1, 1, 1, 1)
-                   : Reshape(c2.Read(), op1, op1, op1, nel_ho);
+   const double DQ = curl_curl_coeff;
+   const double MQ = mass_coeff;
 
    sparse_ij.SetSize(nnz_per_row*ndof_per_el*nel_ho);
    auto V = Reshape(sparse_ij.Write(), nnz_per_row, o*op1*op1, dim, nel_ho);
@@ -332,8 +318,6 @@ void BatchedLOR_ND::Assemble3D()
                   {
                      for (int iqx=0; iqx<2; ++iqx)
                      {
-                        const double mq = const_mq ? MQ(0,0,0,0) : MQ(kx+iqx, ky+iqy, kz+iqz, iel_ho);
-                        const double dq = const_dq ? DQ(0,0,0,0) : DQ(kx+iqx, ky+iqy, kz+iqz, iel_ho);
                         // Loop over x,y,z components. 0 => x, 1 => y, 2 => z
                         for (int cj=0; cj<dim; ++cj)
                         {
@@ -407,7 +391,7 @@ void BatchedLOR_ND::Assemble3D()
                                     basis_basis += Q(4,iqz,iqy,iqx)*(basis_i[1]*basis_j[2] + basis_i[2]*basis_j[1]);
                                     basis_basis += Q(5,iqz,iqy,iqx)*basis_i[2]*basis_j[2];
 
-                                    const double val = dq*curl_curl + mq*basis_basis;
+                                    const double val = DQ*curl_curl + MQ*basis_basis;
 
                                     local_mat(ii_loc, jj_loc) += val;
                                  }
@@ -588,8 +572,28 @@ BatchedLOR_ND::BatchedLOR_ND(BilinearForm &a,
                              Array<int> &sparse_mapping_)
    : BatchedLORKernel(fes_ho_, X_vert_, sparse_ij_, sparse_mapping_)
 {
-   ProjectLORCoefficient<VectorFEMassIntegrator>(a, c1);
-   ProjectLORCoefficient<CurlCurlIntegrator>(a, c2);
+   VectorFEMassIntegrator *mass = GetIntegrator<VectorFEMassIntegrator>(a);
+   if (mass != nullptr)
+   {
+      auto *coeff = dynamic_cast<const ConstantCoefficient*>(mass->GetCoefficient());
+      mass_coeff = coeff ? coeff->constant : 1.0;
+   }
+   else
+   {
+      mass_coeff = 0.0;
+   }
+
+   CurlCurlIntegrator *diffusion = GetIntegrator<CurlCurlIntegrator>(a);
+   if (diffusion != nullptr)
+   {
+      auto *coeff = dynamic_cast<const ConstantCoefficient*>
+                    (diffusion->GetCoefficient());
+      curl_curl_coeff = coeff ? coeff->constant : 1.0;
+   }
+   else
+   {
+      curl_curl_coeff = 0.0;
+   }
 }
 
 } // namespace mfem

@@ -105,26 +105,28 @@ void TestCalcCurlShape(FiniteElement* fe, ElementTransformation * T, int res)
    }
 }
 
-TEST_CASE("CalcCurlShape ND",
+TEST_CASE("CalcCurlShape for several ND FiniteElement instances",
           "[ND_TriangleElement]"
           "[ND_QuadrilateralElement]"
           "[ND_TetrahedronElement]"
           "[ND_WedgeElement]"
           "[ND_HexahedronElement]")
 {
-   const int maxOrder = 5;
-   const int resolution = 10;
-   auto order = GENERATE_COPY(range(1, maxOrder + 1));
-
-   CAPTURE(order);
+   int maxOrder = 5;
+   int resolution = 10;
 
    SECTION("ND_TriangleElement")
    {
       IsoparametricTransformation T;
       GetReferenceTransformation(Element::TRIANGLE, T);
 
-      ND_TriangleElement fe(order);
-      TestCalcCurlShape(&fe, &T, resolution);
+      for (int order =1; order <= maxOrder; ++order)
+      {
+         std::cout << "Testing ND_TriangleElement::CalcCurlShape() "
+                   << "for order " << order << std::endl;
+         ND_TriangleElement fe(order);
+         TestCalcCurlShape(&fe, &T, resolution);
+      }
    }
 
    SECTION("ND_QuadrilateralElement")
@@ -132,8 +134,13 @@ TEST_CASE("CalcCurlShape ND",
       IsoparametricTransformation T;
       GetReferenceTransformation(Element::QUADRILATERAL, T);
 
-      ND_QuadrilateralElement fe(order);
-      TestCalcCurlShape(&fe, &T, resolution);
+      for (int order =1; order <= maxOrder; ++order)
+      {
+         std::cout << "Testing ND_QuadrilateralElement::CalcCurlShape() "
+                   << "for order " << order << std::endl;
+         ND_QuadrilateralElement fe(order);
+         TestCalcCurlShape(&fe, &T, resolution);
+      }
    }
 
    SECTION("ND_TetrahedronElement")
@@ -141,8 +148,13 @@ TEST_CASE("CalcCurlShape ND",
       IsoparametricTransformation T;
       GetReferenceTransformation(Element::TETRAHEDRON, T);
 
-      ND_TetrahedronElement fe(order);
-      TestCalcCurlShape(&fe, &T, resolution);
+      for (int order =1; order <= maxOrder; ++order)
+      {
+         std::cout << "Testing ND_TetrahedronElement::CalcCurlShape() "
+                   << "for order " << order << std::endl;
+         ND_TetrahedronElement fe(order);
+         TestCalcCurlShape(&fe, &T, resolution);
+      }
    }
 
    SECTION("ND_WedgeElement")
@@ -150,8 +162,13 @@ TEST_CASE("CalcCurlShape ND",
       IsoparametricTransformation T;
       GetReferenceTransformation(Element::WEDGE, T);
 
-      ND_WedgeElement fe(order);
-      TestCalcCurlShape(&fe, &T, resolution);
+      for (int order =1; order <= maxOrder; ++order)
+      {
+         std::cout << "Testing ND_WedgeElement::CalcCurlShape() "
+                   << "for order " << order << std::endl;
+         ND_WedgeElement fe(order);
+         TestCalcCurlShape(&fe, &T, resolution);
+      }
    }
 
    SECTION("ND_HexahedronElement")
@@ -159,7 +176,12 @@ TEST_CASE("CalcCurlShape ND",
       IsoparametricTransformation T;
       GetReferenceTransformation(Element::HEXAHEDRON, T);
 
-      ND_HexahedronElement fe(order);
-      TestCalcCurlShape(&fe, &T, resolution);
+      for (int order =1; order <= maxOrder; ++order)
+      {
+         std::cout << "Testing ND_HexahedronElement::CalcCurlShape() "
+                   << "for order " << order << std::endl;
+         ND_HexahedronElement fe(order);
+         TestCalcCurlShape(&fe, &T, resolution);
+      }
    }
 }

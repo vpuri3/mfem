@@ -97,8 +97,8 @@ TEST_CASE("Mass Diagonal PA", "[PartialAssembly][AssembleDiagonal]")
    {
       for (int ne = 1; ne < 3; ++ne)
       {
-         const int n_elements = pow(ne, dimension);
-         CAPTURE(dimension, n_elements);
+         std::cout << "Testing " << dimension << "D partial assembly mass diagonal: "
+                   << std::pow(ne, dimension) << " elements." << std::endl;
          for (int order = 1; order < 5; ++order)
          {
             Mesh mesh;
@@ -131,7 +131,7 @@ TEST_CASE("Mass Diagonal PA", "[PartialAssembly][AssembleDiagonal]")
 
             assembly_diag -= pa_diag;
             double error = assembly_diag.Norml2();
-            CAPTURE(order, error);
+            std::cout << "    order: " << order << ", error norm: " << error << std::endl;
             REQUIRE(assembly_diag.Norml2() < 1.e-12);
 
             delete h1_fec;
@@ -146,9 +146,9 @@ TEST_CASE("Diffusion Diagonal PA", "[PartialAssembly][AssembleDiagonal]")
    {
       for (int ne = 1; ne < 3; ++ne)
       {
-         const int n_elements = pow(ne, dimension);
-         CAPTURE(dimension, n_elements);
-
+         std::cout << "Testing " << dimension <<
+                   "D partial assembly diffusion diagonal: "
+                   << std::pow(ne, dimension) << " elements." << std::endl;
          for (int order = 1; order < 5; ++order)
          {
             Mesh mesh;
@@ -224,7 +224,8 @@ TEST_CASE("Diffusion Diagonal PA", "[PartialAssembly][AssembleDiagonal]")
 
                assembly_diag -= pa_diag;
                double error = assembly_diag.Norml2();
-               CAPTURE(order, coeffType, error);
+               std::cout << "    order: " << order << ", coefficient type "
+                         << coeffType << ", error norm: " << error << std::endl;
                REQUIRE(assembly_diag.Norml2() < 1.e-12);
 
                delete coeff;
@@ -326,6 +327,8 @@ TEST_CASE("Hcurl/Hdiv diagonal PA",
    {
       for (int coeffType = 0; coeffType < 5; ++coeffType)
       {
+         const int numSpaces = (coeffType == 0) ? 2 : 1;
+
          Coefficient* coeff = nullptr;
          DiagonalMatrixCoefficient* dcoeff = nullptr;
          MatrixCoefficient* mcoeff = nullptr;
@@ -354,19 +357,23 @@ TEST_CASE("Hcurl/Hdiv diagonal PA",
 
          enum Spaces {Hcurl, Hdiv};
 
-         for (int spaceType : {Hcurl, Hdiv})
+         for (int spaceType = 0; spaceType < numSpaces; ++spaceType)
          {
-            // For div-div or 2D curl-curl, coefficient must be scalar.
-            const bool testCurlCurl = dimension == 3 || coeffType < 2;
-            const int numIntegrators = (spaceType == Hcurl && testCurlCurl) ||
-                                       (spaceType == Hdiv && coeffType < 2) ? 2 : 1;
-
+            const int numIntegrators = (dimension == 3 || coeffType < 2) ? 2 : 1;
             for (int integrator = 0; integrator < numIntegrators; ++integrator)
             {
                for (int ne = 1; ne < 3; ++ne)
                {
-                  const int n_elements = std::pow(ne, dimension);
-                  CAPTURE(dimension, spaceType, integrator, coeffType, n_elements);
+                  if (spaceType == Hcurl)
+                     std::cout << "Testing " << dimension <<
+                               "D partial assembly H(curl) diagonal for integrator " << integrator
+                               << " and coeffType " << coeffType << ": "
+                               << std::pow(ne, dimension) << " elements." << std::endl;
+                  else
+                     std::cout << "Testing " << dimension <<
+                               "D partial assembly H(div) diagonal for integrator " << integrator
+                               << " and coeffType " << coeffType << ": "
+                               << std::pow(ne, dimension) << " elements." << std::endl;
 
                   int max_order = (dimension == 3) ? 2 : 3;
 
@@ -412,12 +419,12 @@ TEST_CASE("Hcurl/Hdiv diagonal PA",
                      }
                      else
                      {
-                        const FiniteElement *fel = fespace.GetFE(0);
-                        const IntegrationRule *intRule = &MassIntegrator::GetRule(*fel, *fel,
-                                                                                  *mesh.GetElementTransformation(0));
-
                         if (spaceType == Hcurl)
                         {
+                           const FiniteElement *fel = fespace.GetFE(0);
+                           const IntegrationRule *intRule = &MassIntegrator::GetRule(*fel, *fel,
+                                                                                     *mesh.GetElementTransformation(0));
+
                            if (coeffType >= 3)
                            {
                               paform.AddDomainIntegrator(new CurlCurlIntegrator(*mcoeff, intRule));
@@ -436,8 +443,8 @@ TEST_CASE("Hcurl/Hdiv diagonal PA",
                         }
                         else
                         {
-                           paform.AddDomainIntegrator(new DivDivIntegrator(*coeff, intRule));
-                           faform.AddDomainIntegrator(new DivDivIntegrator(*coeff, intRule));
+                           paform.AddDomainIntegrator(new DivDivIntegrator(*coeff));
+                           faform.AddDomainIntegrator(new DivDivIntegrator(*coeff));
                         }
                      }
                      paform.Assemble();
@@ -451,7 +458,7 @@ TEST_CASE("Hcurl/Hdiv diagonal PA",
 
                      assembly_diag -= pa_diag;
                      double error = assembly_diag.Norml2();
-                     CAPTURE(order, error);
+                     std::cout << "    order: " << order << ", error norm: " << error << std::endl;
                      REQUIRE(assembly_diag.Norml2() < 1.e-11);
 
                      delete fec;

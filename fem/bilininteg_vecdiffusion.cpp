@@ -12,7 +12,6 @@
 #include "../general/forall.hpp"
 #include "bilininteg.hpp"
 #include "gridfunc.hpp"
-#include "qfunction.hpp"
 #include "ceed/integrators/diffusion/diffusion.hpp"
 
 using namespace std;
@@ -150,16 +149,7 @@ void VectorDiffusionIntegrator::AssemblePA(const FiniteElementSpace &fes)
    if (DeviceCanUseCeed())
    {
       delete ceedOp;
-      const bool mixed = mesh->GetNumGeometries(mesh->Dimension()) > 1 ||
-                         fes.IsVariableOrder();
-      if (mixed)
-      {
-         ceedOp = new ceed::MixedPADiffusionIntegrator(*this, fes, Q);
-      }
-      else
-      {
-         ceedOp = new ceed::PADiffusionIntegrator(fes, *ir, Q);
-      }
+      ceedOp = new ceed::PADiffusionIntegrator(fes, *ir, Q);
       return;
    }
    const int dims = el.GetDim();
@@ -176,9 +166,43 @@ void VectorDiffusionIntegrator::AssemblePA(const FiniteElementSpace &fes)
 
    MFEM_VERIFY(!VQ && !MQ,
                "Only scalar coefficient supported for partial assembly for VectorDiffusionIntegrator");
+   Vector coeff;
+   if (Q == nullptr)
+   {
+      coeff.SetSize(1);
+      coeff(0) = 1.0;
+   }
+   else if (ConstantCoefficient* cQ = dynamic_cast<ConstantCoefficient*>(Q))
+   {
+      coeff.SetSize(1);
+      coeff(0) = cQ->constant;
+   }
+   else if (QuadratureFunctionCoefficient* qfQ =
+               dynamic_cast<QuadratureFunctionCoefficient*>(Q))
+   {
+      const QuadratureFunction &qFun = qfQ->GetQuadFunction();
+      MFEM_VERIFY(qFun.Size() == ne*nq,
+                  "Incompatible QuadratureFunction dimension \n");
 
-   QuadratureSpace qs(*mesh, *ir);
-   CoefficientVector coeff(Q, qs, CoefficientStorage::COMPRESSED);
+      MFEM_VERIFY(ir == &qFun.GetSpace()->GetElementIntRule(0),
+                  "IntegrationRule used within integrator and in"
+                  " QuadratureFunction appear to be different");
+      qFun.Read();
+      coeff.MakeRef(const_cast<QuadratureFunction &>(qFun),0);
+   }
+   else
+   {
+      coeff.SetSize(nq * ne);
+      auto Co = Reshape(coeff.HostWrite(), nq, ne);
+      for (int e = 0; e < ne; ++e)
+      {
+         ElementTransformation& T = *fes.GetElementTransformation(e);
+         for (int q = 0; q < nq; ++q)
+         {
+            Co(q,e) = Q->Eval(T, ir->IntPoint(q));
+         }
+      }
+   }
 
    const Array<double> &w = ir->GetWeights();
    const Vector &j = geom->J;

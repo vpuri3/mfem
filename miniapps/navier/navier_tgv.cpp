@@ -73,8 +73,9 @@ public:
       for (int i = 0; i < fes->GetNE(); i++)
       {
          fe = fes->GetFE(i);
-         int intorder = 2 * fe->GetOrder();
-         const IntegrationRule *ir = &IntRules.Get(fe->GetGeomType(), intorder);
+         double intorder = 2 * fe->GetOrder();
+         const IntegrationRule *ir = &(
+                                        IntRules.Get(fe->GetGeomType(), intorder));
 
          v.GetValues(i, *ir, velx, 1);
          v.GetValues(i, *ir, vely, 2);
@@ -331,7 +332,7 @@ int main(int argc, char *argv[])
 
    if (Mpi::Root())
    {
-      int nel1d = static_cast<int>(std::round(pow(nel, 1.0 / 3.0)));
+      int nel1d = std::round(pow(nel, 1.0 / 3.0));
       int ngridpts = p_gf->ParFESpace()->GlobalVSize();
       printf("%11s %11s %11s %11s %11s\n", "Time", "dt", "u_inf", "p_inf", "ke");
       printf("%.5E %.5E %.5E %.5E %.5E\n", t, dt, u_inf, p_inf, ke);

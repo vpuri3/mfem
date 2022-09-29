@@ -14,7 +14,6 @@
 
 #include "../config/config.hpp"
 #include "gridfunc.hpp"
-#include "qfunction.hpp"
 #ifdef MFEM_USE_MPI
 #include "pgridfunc.hpp"
 #endif

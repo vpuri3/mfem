@@ -102,9 +102,7 @@ The MFEM source code has the following structure:
   .
   ├── config
   │   ├── cmake
-  │   ├── docker
-  │   ├── githooks
-  │   └── vcpkg
+  │   └── githooks
   ├── data
   ├── doc
   ├── examples
@@ -113,7 +111,6 @@ The MFEM source code has the following structure:
   │   ├── ginkgo
   │   ├── hiop
   │   ├── jupyter
-  │   ├── moonolith
   │   ├── petsc
   │   ├── pumi
   │   ├── sundials
@@ -121,25 +118,21 @@ The MFEM source code has the following structure:
   ├── fem
   │   ├── ceed
   │   ├── fe
-  │   ├── lor
-  │   ├── moonolith
   │   ├── qinterp
+  │   ├── moonolith
   │   └── tmop
   ├── general
   ├── linalg
   │   └── simd
   ├── mesh
-  │   └── submesh
   ├── miniapps
   │   ├── adjoint
   │   ├── autodiff
   │   ├── common
   │   ├── electromagnetics
   │   ├── gslib
-  │   ├── hooke
   │   ├── meshing
   │   ├── mtop
-  │   ├── multidomain
   │   ├── navier
   │   ├── nurbs
   │   ├── parelag

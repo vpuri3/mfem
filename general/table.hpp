@@ -191,7 +191,7 @@ public:
 
    void Clear();
 
-   std::size_t MemoryUsage() const;
+   long MemoryUsage() const;
 
    /// Destroys Table.
    ~Table();

@@ -106,9 +106,9 @@ int VTKGeometry::GetOrder(int vtk_geom, int npoints)
          case LAGRANGE_SEGMENT:
             return npoints - 1;
          case LAGRANGE_TRIANGLE:
-            return static_cast<int>(std::sqrt(8*npoints + 1) - 3)/2;
+            return (std::sqrt(8*npoints + 1) - 3)/2;
          case LAGRANGE_SQUARE:
-            return static_cast<int>(std::round(std::sqrt(npoints))) - 1;
+            return std::round(std::sqrt(npoints)) - 1;
          case LAGRANGE_TETRAHEDRON:
             switch (npoints)
             {
@@ -138,7 +138,7 @@ int VTKGeometry::GetOrder(int vtk_geom, int npoints)
                }
             }
          case LAGRANGE_CUBE:
-            return static_cast<int>(std::round(std::cbrt(npoints))) - 1;
+            return std::round(std::cbrt(npoints)) - 1;
          case LAGRANGE_PRISM:
          {
             const double n = npoints;
@@ -148,7 +148,7 @@ int VTKGeometry::GetOrder(int vtk_geom, int npoints)
             const double term =
                std::cbrt(third*sqrt(third)*sqrt((27.0*n - 2.0)*n) + n
                          - twentyseventh);
-            return static_cast<int>(std::round(term + ninth / term - 4*third));
+            return std::round(term + ninth / term - 4*third);
          }
          case LAGRANGE_PYRAMID:
             MFEM_ABORT("Lagrange pyramids not currently supported in VTK.");

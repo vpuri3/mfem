@@ -1315,6 +1315,8 @@ TEST_CASE("1D Quadrature Functions")
    mfem::QuadratureFunctions1D quad_func;
 
    // The tests will be reported in these sections.
+   // Each REQUIRE counts as an assertion.
+   // true = pass, false = fail
    SECTION("Gauss-Legendre")
    {
       const int np = 21;
@@ -1335,7 +1337,8 @@ TEST_CASE("1D Quadrature Functions")
             double err_w = std::fabs( ir.IntPoint(i).weight - w_tbl[i] );
             if ( (err_x > tol) || (err_w > tol) )
             {
-               FAIL("Gauss Legendre with " << n << " points wrong");
+               std::cout << "Gauss Legendre with " << n << " points wrong\n";
+               REQUIRE(false);
                break;
             }
          }
@@ -1362,7 +1365,8 @@ TEST_CASE("1D Quadrature Functions")
             double err_w = std::fabs( ir.IntPoint(i).weight - w_tbl[i] );
             if ( (err_x > tol) || (err_w > tol) )
             {
-               FAIL("Gauss Lobatto with " << n << " points wrong");
+               std::cout << "Gauss Lobatto with " << n << " points wrong\n";
+               REQUIRE(false);
                break;
             }
          }
@@ -1391,7 +1395,8 @@ TEST_CASE("1D Quadrature Functions")
             double err_w = std::fabs( ir.IntPoint(i).weight - w_tbl[i] );
             if ( (err_x > tol) || (err_w > tol) )
             {
-               FAIL("Closed Newton-Cotes with " << n << " points wrong");
+               std::cout << "Closed Newton-Cotes with " << n << " points wrong\n";
+               REQUIRE(false);
                break;
             }
          }
@@ -1420,7 +1425,8 @@ TEST_CASE("1D Quadrature Functions")
             double err_w = std::fabs( ir.IntPoint(i).weight - w_tbl[i] );
             if ( (err_x > tol) || (err_w > tol) )
             {
-               FAIL("Open Newton-Cotes with " << n << " points wrong");
+               std::cout << "Open Newton-Cotes with " << n << " points wrong\n";
+               REQUIRE(false);
                break;
             }
          }

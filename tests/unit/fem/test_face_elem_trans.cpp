@@ -20,6 +20,7 @@ namespace face_elem_trans
 TEST_CASE("3D FaceElementTransformations",
           "[FaceElementTransformations]")
 {
+   int log = 0;
    int n = 1;
    int order = 1;
 
@@ -31,9 +32,9 @@ TEST_CASE("3D FaceElementTransformations",
       int npts = 0;
       for (int f=0; f<mesh.GetNFaces(); f++)
       {
-         if (verbose_tests)
+         if (log > 0)
          {
-            mfem::out << "Getting trans for face " << f << std::endl;
+            std::cout << "Getting trans for face " << f << std::endl;
          }
          FaceElementTransformations *T =
             mesh.GetInteriorFaceTransformations(f);
@@ -42,9 +43,9 @@ TEST_CASE("3D FaceElementTransformations",
          {
             const IntegrationRule &ir = IntRules.Get(T->GetGeometryType(),
                                                      2*order + 2);
-            if (verbose_tests)
+            if (log > 0)
             {
-               mfem::out << f << " " << T->Elem1No
+               std::cout << f << " " << T->Elem1No
                          << " " << T->Elem2No << std::endl;
             }
 
@@ -82,9 +83,9 @@ TEST_CASE("3D FaceElementTransformations",
                }
             }
          }
-         if (verbose_tests)
+         if (log > 0)
          {
-            mfem::out << "Checked " << npts << " points within face "
+            std::cout << "Checked " << npts << " points within face "
                       << f << std::endl;
          }
       }

@@ -25,22 +25,19 @@ class LinearForm;
 class LinearFormExtension
 {
    /// Attributes of all mesh elements.
-   Array<int> attributes, bdr_attributes;
+   Array<int> attributes;
 
    /// Temporary markers for device kernels.
-   Array<int> markers, bdr_markers;
+   Array<int> markers;
 
    /// Linear form from which this extension depends. Not owned.
    LinearForm *lf;
 
    /// Operator that converts FiniteElementSpace L-vectors to E-vectors.
-   const ElementRestrictionOperator *elem_restrict_lex; // Not owned
-
-   /// Operator that converts L-vectors to boundary E-vectors.
-   const FaceRestriction *bdr_restrict_lex; // Not owned
+   const Operator *elem_restrict_lex; // Not owned
 
    /// Internal E-vectors.
-   mutable Vector b, bdr_b;
+   mutable Vector b;
 
 public:
 

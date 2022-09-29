@@ -21,7 +21,8 @@ static bool testQuadratureInterpolator(const int dim,
                                        const int nx, const int ny, const int nz)
 {
    // Keep for debugging purposes:
-   if (verbose_tests)
+   const bool verbose = false;
+   if (verbose)
    {
       std::cout << "testQuadratureInterpolator(dim=" << dim
                 << ",p=" << p
@@ -144,21 +145,21 @@ static bool testQuadratureInterpolator(const int dim,
       norm = sq_val_f.Normlinf();
       sq_val_f -= sq_val_t;
       rel_error = sq_val_f.Normlinf()/norm;
-      if (verbose_tests)
+      if (verbose)
       { std::cout << "sq_val rel. error = " << rel_error << std::endl; }
       REQUIRE(rel_error <= rel_tol);
 
       norm = sq_der_f.Normlinf();
       sq_der_f -= sq_der_t;
       rel_error = sq_der_f.Normlinf()/norm;
-      if (verbose_tests)
+      if (verbose)
       { std::cout << "sq_der rel. error = " << rel_error << std::endl; }
       REQUIRE(rel_error <= rel_tol);
 
       norm = sq_pdr_f.Normlinf();
       sq_pdr_f -= sq_pdr_t;
       rel_error = sq_pdr_f.Normlinf()/norm;
-      if (verbose_tests)
+      if (verbose)
       { std::cout << "sq_pdr rel. error = " << rel_error << std::endl; }
       REQUIRE(rel_error <= rel_tol);
    }
@@ -208,28 +209,28 @@ static bool testQuadratureInterpolator(const int dim,
       norm = vq_val_f.Normlinf();
       vq_val_f -= vq_val_t;
       rel_error = vq_val_f.Normlinf()/norm;
-      if (verbose_tests)
+      if (verbose)
       { std::cout << "vq_val rel. error = " << rel_error << std::endl; }
       REQUIRE(rel_error <= rel_tol);
 
       norm = vq_der_f.Normlinf();
       vq_der_f -= vq_der_t;
       rel_error = vq_der_f.Normlinf()/norm;
-      if (verbose_tests)
+      if (verbose)
       { std::cout << "vq_der rel. error = " << rel_error << std::endl; }
       REQUIRE(rel_error <= rel_tol);
 
       norm = vq_det_f.Normlinf();
       vq_det_f -= vq_det_t;
       rel_error = vq_det_f.Normlinf()/norm;
-      if (verbose_tests)
+      if (verbose)
       { std::cout << "vq_det rel. error = " << rel_error << std::endl; }
       REQUIRE(rel_error <= rel_tol);
 
       norm = vq_pdr_f.Normlinf();
       vq_pdr_f -= vq_pdr_t;
       rel_error = vq_pdr_f.Normlinf()/norm;
-      if (verbose_tests)
+      if (verbose)
       { std::cout << "vq_pdr rel. error = " << rel_error << std::endl; }
       REQUIRE(rel_error <= rel_tol);
    }

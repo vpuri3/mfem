@@ -257,7 +257,7 @@ TEST_CASE("HypreParMatrixBlocksRectangular",
 
       yH -= yB;
       double error = yH.Norml2();
-      mfem::out << "  order: " << order
+      std::cout << "  order: " << order
                 << ", block matrix error norm on rank " << rank << ": " << error << std::endl;
       REQUIRE(error < 1.e-12);
 

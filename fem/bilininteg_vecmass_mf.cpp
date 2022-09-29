@@ -34,16 +34,7 @@ void VectorMassIntegrator::AssembleMF(const FiniteElementSpace &fes)
    if (DeviceCanUseCeed())
    {
       delete ceedOp;
-      const bool mixed = mesh->GetNumGeometries(mesh->Dimension()) > 1 ||
-                         fes.IsVariableOrder();
-      if (mixed)
-      {
-         ceedOp = new ceed::MixedMFMassIntegrator(*this, fes, Q);
-      }
-      else
-      {
-         ceedOp = new ceed::MFMassIntegrator(fes, *ir, Q);
-      }
+      ceedOp = new ceed::MFMassIntegrator(fes, *ir, Q);
       return;
    }
    MFEM_ABORT("Error: VectorMassIntegrator::AssembleMF only implemented with"

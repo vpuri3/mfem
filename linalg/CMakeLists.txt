@@ -14,7 +14,6 @@ list(APPEND SRCS
   blockmatrix.cpp
   blockoperator.cpp
   blockvector.cpp
-  complex_densemat.cpp
   complex_operator.cpp
   constraints.cpp
   densemat.cpp
@@ -34,7 +33,6 @@ list(APPEND HDRS
   blockmatrix.hpp
   blockoperator.hpp
   blockvector.hpp
-  complex_densemat.hpp
   complex_operator.hpp
   constraints.hpp
   densemat.hpp
@@ -54,8 +52,6 @@ list(APPEND HDRS
   tlayout.hpp
   tmatrix.hpp
   ttensor.hpp
-  tensor.hpp
-  dual.hpp
   vector.hpp
   )
 

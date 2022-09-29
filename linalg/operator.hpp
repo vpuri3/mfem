@@ -28,7 +28,6 @@ protected:
    int width;  ///< Dimension of the input / number of columns in the matrix.
 
    /// see FormSystemOperator()
-   /** @note Uses DiagonalPolicy::DIAG_ONE. */
    void FormConstrainedSystemOperator(
       const Array<int> &ess_tdof_list, ConstrainedOperator* &Aout);
 
@@ -266,10 +265,7 @@ public:
       PETSC_MATGENERIC, ///< ID for class PetscParMatrix, unspecified format.
       Complex_Operator, ///< ID for class ComplexOperator.
       MFEM_ComplexSparseMat, ///< ID for class ComplexSparseMatrix.
-      Complex_Hypre_ParCSR,   ///< ID for class ComplexHypreParMatrix.
-      Complex_DenseMat,  ///< ID for class ComplexDenseMatrix
-      MFEM_Block_Matrix,     ///< ID for class BlockMatrix.
-      MFEM_Block_Operator   ///< ID for the base class BlockOperator.
+      Complex_Hypre_ParCSR   ///< ID for class ComplexHypreParMatrix.
    };
 
    /// Return the type ID of the Operator class.
@@ -882,9 +878,7 @@ public:
            z = A((0,x_b));  b_i -= z_i;  b_b = x_b;
 
        where the "_b" subscripts denote the essential (boundary) indices/dofs of
-       the vectors, and "_i" -- the rest of the entries.
-
-       @note This method is consistent with `DiagonalPolicy::DIAG_ONE`. */
+       the vectors, and "_i" -- the rest of the entries. */
    void EliminateRHS(const Vector &x, Vector &b) const;
 
    /** @brief Constrained operator action.

@@ -279,25 +279,19 @@ public:
    { return ComputeLpError(1.0, exsol, NULL, NULL, irs); }
 
    virtual double ComputeL2Error(Coefficient *exsol[],
-                                 const IntegrationRule *irs[] = NULL,
-                                 const Array<int> *elems = NULL) const
+                                 const IntegrationRule *irs[] = NULL) const
    {
-      return GlobalLpNorm(2.0, GridFunction::ComputeL2Error(exsol, irs, elems),
+      return GlobalLpNorm(2.0, GridFunction::ComputeL2Error(exsol, irs),
                           pfes->GetComm());
    }
 
    virtual double ComputeL2Error(Coefficient &exsol,
-                                 const IntegrationRule *irs[] = NULL,
-                                 const Array<int> *elems = NULL) const
-   {
-      return GlobalLpNorm(2.0, GridFunction::ComputeL2Error(exsol, irs, elems),
-                          pfes->GetComm());
-   }
-
+                                 const IntegrationRule *irs[] = NULL) const
+   { return ComputeLpError(2.0, exsol, NULL, irs); }
 
    virtual double ComputeL2Error(VectorCoefficient &exsol,
                                  const IntegrationRule *irs[] = NULL,
-                                 const Array<int> *elems = NULL) const
+                                 Array<int> *elems = NULL) const
    {
       return GlobalLpNorm(2.0, GridFunction::ComputeL2Error(exsol, irs, elems),
                           pfes->GetComm());
@@ -396,11 +390,10 @@ public:
 
    virtual double ComputeLpError(const double p, Coefficient &exsol,
                                  Coefficient *weight = NULL,
-                                 const IntegrationRule *irs[] = NULL,
-                                 const Array<int> *elems = NULL) const
+                                 const IntegrationRule *irs[] = NULL) const
    {
-      return GlobalLpNorm(p, GridFunction::ComputeLpError(p, exsol, weight, irs,
-                                                          elems), pfes->GetComm());
+      return GlobalLpNorm(p, GridFunction::ComputeLpError(
+                             p, exsol, weight, irs), pfes->GetComm());
    }
 
    /** When given a vector weight, compute the pointwise (scalar) error as the

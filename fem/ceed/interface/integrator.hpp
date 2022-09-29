@@ -18,7 +18,6 @@
 #include "operator.hpp"
 #include "coefficient.hpp"
 #include "restriction.hpp"
-#include "util.hpp"
 #include "ceed.hpp"
 
 namespace mfem
@@ -87,7 +86,6 @@ protected:
    CeedQFunctionContext build_ctx;
    CeedOperator build_oper;
 
-public:
    PAIntegrator()
       : Operator(),
         trial_basis(nullptr), test_basis(nullptr), mesh_basis(nullptr),
@@ -97,51 +95,23 @@ public:
         qdata(nullptr), coeff(nullptr), build_ctx(nullptr), build_oper(nullptr)
    { }
 
-   /** @brief This method assembles the `PAIntegrator` with the given
-       `CeedOperatorInfo` @a info, an `mfem::FiniteElementSpace` @a fes, an
-       `mfem::IntegrationRule` @a ir, and `mfem::Coefficient` or
-       `mfem::VectorCoefficient` @a Q.
-       The `CeedOperatorInfo` type is expected to inherit from `OperatorInfo`,
-       and contain a `Context` type relevant to the qFunctions.
+public:
+   /** This method assembles the PAIntegrator.
 
-       @param[in] info is the structure describing the CeedOperator to assemble.
-       @param[in] fes is the finite element space.
-       @param[in] ir is the integration rule for the operator.
-       @param[in] Q is the coefficient from the `Integrator`. */
+       @param[in] info the `CeedOperatorInfo` describing the `CeedOperator`,
+                       the `CeedOperatorInfo` type is expected to inherit from
+                       `OperatorInfo` and contain a `Context` type relevant to
+                       the qFunctions.
+       @param[in] fes the `FiniteElementSpace` for the form,
+       @param[in] ir the `IntegrationRule` for the numerical integration,
+       @param[in] Q `Coefficient` or `VectorCoefficient`. */
    template <typename CeedOperatorInfo, typename CoeffType>
    void Assemble(CeedOperatorInfo &info,
                  const mfem::FiniteElementSpace &fes,
-                 const mfem::IntegrationRule &ir,
+                 const mfem::IntegrationRule &irm,
                  CoeffType *Q)
    {
-      Assemble(info, fes, ir, fes.GetNE(), nullptr, Q);
-   }
-
-   /** @brief This method assembles the `PAIntegrator` with the given
-       `CeedOperatorInfo` @a info, an `mfem::FiniteElementSpace` @a fes, an
-       `mfem::IntegrationRule` @a ir, and `mfem::Coefficient` or
-       `mfem::VectorCoefficient` @a Q for the elements given by the indices
-       @a indices.
-       The `CeedOperatorInfo` type is expected to inherit from `OperatorInfo`,
-       and contain a `Context` type relevant to the qFunctions.
-
-       @param[in] info is the structure describing the CeedOperator to assemble.
-       @param[in] fes is the finite element space.
-       @param[in] ir is the integration rule for the operator.
-       @param[in] nelem The number of elements.
-       @param[in] indices The indices of the elements of same type in the
-                          `FiniteElementSpace`. If `indices == nullptr`, assumes
-                          that the `FiniteElementSpace` is not mixed.
-       @param[in] Q is the coefficient from the `Integrator`. */
-   template <typename CeedOperatorInfo, typename CoeffType>
-   void Assemble(CeedOperatorInfo &info,
-                 const mfem::FiniteElementSpace &fes,
-                 const mfem::IntegrationRule &ir,
-                 int nelem,
-                 const int* indices,
-                 CoeffType *Q)
-   {
-      Assemble(info, fes, fes, ir, nelem, indices, Q);
+      Assemble(info, fes, fes, irm, Q);
    }
 
    /** This method assembles the PAIntegrator for mixed forms.
@@ -158,40 +128,12 @@ public:
    void Assemble(CeedOperatorInfo &info,
                  const mfem::FiniteElementSpace &trial_fes,
                  const mfem::FiniteElementSpace &test_fes,
-                 const mfem::IntegrationRule &ir,
-                 CoeffType *Q)
-   {
-      Assemble(info, trial_fes, test_fes, ir, trial_fes.GetNE(), nullptr, Q);
-   }
-
-   /** This method assembles the PAIntegrator for mixed forms on mixed meshes.
-
-       @param[in] info the `CeedOperatorInfo` describing the `CeedOperator`,
-                       the `CeedOperatorInfo` type is expected to inherit from
-                       `OperatorInfo` and contain a `Context` type relevant to
-                       the qFunctions.
-       @param[in] trial_fes the trial `FiniteElementSpace` for the form,
-       @param[in] test_fes the test `FiniteElementSpace` for the form,
-       @param[in] ir the `IntegrationRule` for the numerical integration,
-       @param[in] nelem The number of elements,
-       @param[in] indices The indices of the elements of same type in the
-                          `FiniteElementSpace`. If `indices == nullptr`, assumes
-                          that the `FiniteElementSpace` is not mixed,
-       @param[in] Q `Coefficient` or `VectorCoefficient`. */
-   template <typename CeedOperatorInfo, typename CoeffType>
-   void Assemble(CeedOperatorInfo &info,
-                 const mfem::FiniteElementSpace &trial_fes,
-                 const mfem::FiniteElementSpace &test_fes,
-                 const mfem::IntegrationRule &ir,
-                 int nelem,
-                 const int* indices,
+                 const mfem::IntegrationRule &irm,
                  CoeffType *Q)
    {
       Ceed ceed(internal::ceed);
       mfem::Mesh &mesh = *trial_fes.GetMesh();
-      MFEM_VERIFY(!(!indices && mesh.GetNumGeometries(mesh.Dimension()) > 1),
-                  "Use ceed::MixedIntegrator on mixed meshes.");
-      InitCoefficient(Q, mesh, ir, nelem, indices, coeff, info.ctx);
+      InitCoefficient(Q, mesh, irm, coeff, info.ctx);
       bool const_coeff = coeff->IsConstant();
       std::string build_func = const_coeff ? info.build_func_const
                                : info.build_func_quad;
@@ -203,6 +145,7 @@ public:
                      info.trial_op,
                      info.test_op
                     };
+      CeedInt nqpts, nelem = mesh.GetNE();
       CeedInt dim = mesh.SpaceDimension();
       CeedInt trial_vdim = trial_fes.GetVDim();
       CeedInt test_vdim = test_fes.GetVDim();
@@ -210,23 +153,23 @@ public:
       mesh.EnsureNodes();
       if ( &trial_fes == &test_fes )
       {
-         InitBasisAndRestriction(trial_fes, ir, nelem, indices,
-                                 ceed, &trial_basis, &trial_restr);
+         InitBasisAndRestriction(trial_fes, irm, ceed,
+                                 &trial_basis, &trial_restr);
          test_basis = trial_basis;
          test_restr = trial_restr;
       }
       else
       {
-         InitBasisAndRestriction(trial_fes, ir, nelem, indices,
-                                 ceed, &trial_basis, &trial_restr);
-         InitBasisAndRestriction(test_fes, ir, nelem, indices,
-                                 ceed, &test_basis, &test_restr);
+         InitBasisAndRestriction(trial_fes, irm, ceed,
+                                 &trial_basis, &trial_restr);
+         InitBasisAndRestriction(test_fes, irm, ceed,
+                                 &test_basis, &test_restr);
       }
 
       const mfem::FiniteElementSpace *mesh_fes = mesh.GetNodalFESpace();
       MFEM_VERIFY(mesh_fes, "the Mesh has no nodal FE space");
-      InitBasisAndRestriction(*mesh_fes, ir, nelem, indices,
-                              ceed, &mesh_basis, &mesh_restr);
+      InitBasisAndRestriction(*mesh_fes, irm, ceed, &mesh_basis,
+                              &mesh_restr);
 
       CeedInt trial_nqpts, test_nqpts;
       CeedBasisGetNumQuadraturePoints(trial_basis, &trial_nqpts);
@@ -234,7 +177,7 @@ public:
       MFEM_VERIFY(trial_nqpts == test_nqpts,
                   "Trial and test basis must have the same number of quadrature"
                   " points.");
-      CeedInt nqpts = trial_nqpts;
+      nqpts = trial_nqpts;
 
       const int qdatasize = op.qdatasize;
       InitStridedRestriction(*mesh_fes, nelem, nqpts, qdatasize,
@@ -278,10 +221,8 @@ public:
       CeedOperatorCreate(ceed, build_qfunc, NULL, NULL, &build_oper);
       if (GridCoefficient *gridCoeff = dynamic_cast<GridCoefficient*>(coeff))
       {
-         InitBasisAndRestriction(*gridCoeff->gf.FESpace(), ir,
-                                 nelem, indices, ceed,
-                                 &gridCoeff->basis,
-                                 &gridCoeff->restr);
+         InitBasisAndRestriction(*gridCoeff->gf.FESpace(), irm, ceed,
+                                 &gridCoeff->basis, &gridCoeff->restr);
          CeedOperatorSetField(build_oper, "coeff", gridCoeff->restr,
                               gridCoeff->basis, gridCoeff->coeffVector);
       }
@@ -290,8 +231,7 @@ public:
       {
          const int ncomp = quadCoeff->ncomp;
          CeedInt strides[3] = {ncomp, 1, ncomp*nqpts};
-         InitStridedRestriction(*mesh.GetNodalFESpace(),
-                                nelem, nqpts, ncomp, strides,
+         InitStridedRestriction(*mesh_fes, nelem, nqpts, ncomp, strides,
                                 &quadCoeff->restr);
          CeedOperatorSetField(build_oper, "coeff", quadCoeff->restr,
                               CEED_BASIS_COLLOCATED, quadCoeff->coeffVector);
@@ -314,17 +254,22 @@ public:
       switch (op.trial_op)
       {
          case EvalMode::None:
-            CeedQFunctionAddInput(apply_qfunc, "u", trial_vdim, CEED_EVAL_NONE);
+            CeedQFunctionAddInput(apply_qfunc, "u", trial_vdim,
+                                  CEED_EVAL_NONE);
             break;
          case EvalMode::Interp:
-            CeedQFunctionAddInput(apply_qfunc, "u", trial_vdim, CEED_EVAL_INTERP);
+            CeedQFunctionAddInput(apply_qfunc, "u", trial_vdim,
+                                  CEED_EVAL_INTERP);
             break;
          case EvalMode::Grad:
-            CeedQFunctionAddInput(apply_qfunc, "gu", trial_vdim*dim, CEED_EVAL_GRAD);
+            CeedQFunctionAddInput(apply_qfunc, "gu", trial_vdim*dim,
+                                  CEED_EVAL_GRAD);
             break;
          case EvalMode::InterpAndGrad:
-            CeedQFunctionAddInput(apply_qfunc, "u", trial_vdim, CEED_EVAL_INTERP);
-            CeedQFunctionAddInput(apply_qfunc, "gu", trial_vdim*dim, CEED_EVAL_GRAD);
+            CeedQFunctionAddInput(apply_qfunc, "u", trial_vdim,
+                                  CEED_EVAL_INTERP);
+            CeedQFunctionAddInput(apply_qfunc, "gu", trial_vdim*dim,
+                                  CEED_EVAL_GRAD);
             break;
       }
       // qdata
@@ -333,17 +278,22 @@ public:
       switch (op.test_op)
       {
          case EvalMode::None:
-            CeedQFunctionAddOutput(apply_qfunc, "v", test_vdim, CEED_EVAL_NONE);
+            CeedQFunctionAddOutput(apply_qfunc, "v", test_vdim,
+                                   CEED_EVAL_NONE);
             break;
          case EvalMode::Interp:
-            CeedQFunctionAddOutput(apply_qfunc, "v", test_vdim, CEED_EVAL_INTERP);
+            CeedQFunctionAddOutput(apply_qfunc, "v", test_vdim,
+                                   CEED_EVAL_INTERP);
             break;
          case EvalMode::Grad:
-            CeedQFunctionAddOutput(apply_qfunc, "gv", test_vdim*dim, CEED_EVAL_GRAD);
+            CeedQFunctionAddOutput(apply_qfunc, "gv", test_vdim*dim,
+                                   CEED_EVAL_GRAD);
             break;
          case EvalMode::InterpAndGrad:
-            CeedQFunctionAddOutput(apply_qfunc, "v", test_vdim, CEED_EVAL_INTERP);
-            CeedQFunctionAddOutput(apply_qfunc, "gv", test_vdim*dim, CEED_EVAL_GRAD);
+            CeedQFunctionAddOutput(apply_qfunc, "v", test_vdim,
+                                   CEED_EVAL_INTERP);
+            CeedQFunctionAddOutput(apply_qfunc, "gv", test_vdim*dim,
+                                   CEED_EVAL_GRAD);
             break;
       }
       CeedQFunctionSetContext(apply_qfunc, build_ctx);
@@ -358,14 +308,18 @@ public:
                                  CEED_BASIS_COLLOCATED, CEED_VECTOR_ACTIVE);
             break;
          case EvalMode::Interp:
-            CeedOperatorSetField(oper, "u", trial_restr, trial_basis, CEED_VECTOR_ACTIVE);
+            CeedOperatorSetField(oper, "u", trial_restr, trial_basis,
+                                 CEED_VECTOR_ACTIVE);
             break;
          case EvalMode::Grad:
-            CeedOperatorSetField(oper, "gu", trial_restr, trial_basis, CEED_VECTOR_ACTIVE);
+            CeedOperatorSetField(oper, "gu", trial_restr, trial_basis,
+                                 CEED_VECTOR_ACTIVE);
             break;
          case EvalMode::InterpAndGrad:
-            CeedOperatorSetField(oper, "u", trial_restr, trial_basis, CEED_VECTOR_ACTIVE);
-            CeedOperatorSetField(oper, "gu", trial_restr, trial_basis, CEED_VECTOR_ACTIVE);
+            CeedOperatorSetField(oper, "u", trial_restr, trial_basis,
+                                 CEED_VECTOR_ACTIVE);
+            CeedOperatorSetField(oper, "gu", trial_restr, trial_basis,
+                                 CEED_VECTOR_ACTIVE);
             break;
       }
       // qdata
@@ -379,14 +333,18 @@ public:
                                  CEED_BASIS_COLLOCATED, CEED_VECTOR_ACTIVE);
             break;
          case EvalMode::Interp:
-            CeedOperatorSetField(oper, "v", test_restr, test_basis, CEED_VECTOR_ACTIVE);
+            CeedOperatorSetField(oper, "v", test_restr, test_basis,
+                                 CEED_VECTOR_ACTIVE);
             break;
          case EvalMode::Grad:
-            CeedOperatorSetField(oper, "gv", test_restr, test_basis, CEED_VECTOR_ACTIVE);
+            CeedOperatorSetField(oper, "gv", test_restr, test_basis,
+                                 CEED_VECTOR_ACTIVE);
             break;
          case EvalMode::InterpAndGrad:
-            CeedOperatorSetField(oper, "v", test_restr, test_basis, CEED_VECTOR_ACTIVE);
-            CeedOperatorSetField(oper, "gv", test_restr, test_basis, CEED_VECTOR_ACTIVE);
+            CeedOperatorSetField(oper, "v", test_restr, test_basis,
+                                 CEED_VECTOR_ACTIVE);
+            CeedOperatorSetField(oper, "gv", test_restr, test_basis,
+                                 CEED_VECTOR_ACTIVE);
             break;
       }
 
@@ -444,7 +402,6 @@ protected:
    Coefficient *coeff;
    CeedQFunctionContext build_ctx;
 
-public:
    MFIntegrator()
       : Operator(),
         trial_basis(nullptr), test_basis(nullptr), mesh_basis(nullptr),
@@ -453,51 +410,23 @@ public:
         apply_qfunc(nullptr), node_coords(nullptr),
         qdata(nullptr), coeff(nullptr), build_ctx(nullptr) { }
 
-   /** @brief This method assembles the `MFIntegrator` with the given
-       `CeedOperatorInfo` @a info, an `mfem::FiniteElementSpace` @a fes, an
-       `mfem::IntegrationRule` @a ir, and `mfem::Coefficient` or
-       `mfem::VectorCoefficient` @a Q.
-       The `CeedOperatorInfo` type is expected to inherit from `OperatorInfo`,
-       and contain a `Context` type relevant to the qFunctions.
+public:
+   /** This method assembles the MFIntegrator.
 
-       @param[in] info is the structure describing the CeedOperator to assemble.
-       @param[in] fes is the finite element space.
-       @param[in] ir is the integration rule for the operator.
-       @param[in] Q is the coefficient from the `Integrator`. */
+       @param[in] info the `CeedOperatorInfo` describing the `CeedOperator`,
+                       the `CeedOperatorInfo` type is expected to inherit from
+                       `OperatorInfo` and contain a `Context` type relevant to
+                       the qFunctions.
+       @param[in] fes the `FiniteElementSpace` for the form,
+       @param[in] ir the `IntegrationRule` for the numerical integration,
+       @param[in] Q `Coefficient` or `VectorCoefficient`. */
    template <typename CeedOperatorInfo, typename CoeffType>
    void Assemble(CeedOperatorInfo &info,
                  const mfem::FiniteElementSpace &fes,
-                 const mfem::IntegrationRule &ir,
+                 const mfem::IntegrationRule &irm,
                  CoeffType *Q)
    {
-      Assemble(info, fes, ir, fes.GetNE(), nullptr, Q);
-   }
-
-   /** @brief This method assembles the `MFIntegrator` with the given
-       `CeedOperatorInfo` @a info, an `mfem::FiniteElementSpace` @a fes, an
-       `mfem::IntegrationRule` @a ir, and `mfem::Coefficient` or
-       `mfem::VectorCoefficient` @a Q for the elements given by the indices
-       @a indices.
-       The `CeedOperatorInfo` type is expected to inherit from `OperatorInfo`,
-       and contain a `Context` type relevant to the qFunctions.
-
-       @param[in] info is the structure describing the CeedOperator to assemble.
-       @param[in] fes is the finite element space.
-       @param[in] ir is the integration rule for the operator.
-       @param[in] nelem The number of elements.
-       @param[in] indices The indices of the elements of same type in the
-                          `FiniteElementSpace`. If `indices == nullptr`, assumes
-                          that the `FiniteElementSpace` is not mixed.
-       @param[in] Q is the coefficient from the `Integrator`. */
-   template <typename CeedOperatorInfo, typename CoeffType>
-   void Assemble(CeedOperatorInfo &info,
-                 const mfem::FiniteElementSpace &fes,
-                 const mfem::IntegrationRule &ir,
-                 int nelem,
-                 const int* indices,
-                 CoeffType *Q)
-   {
-      Assemble(info, fes, fes, ir, nelem, indices, Q);
+      Assemble(info, fes, fes, irm, Q);
    }
 
    /** This method assembles the MFIntegrator for mixed forms.
@@ -514,40 +443,12 @@ public:
    void Assemble(CeedOperatorInfo &info,
                  const mfem::FiniteElementSpace &trial_fes,
                  const mfem::FiniteElementSpace &test_fes,
-                 const mfem::IntegrationRule &ir,
-                 CoeffType *Q)
-   {
-      Assemble(info, trial_fes, test_fes, ir, trial_fes.GetNE(), nullptr, Q);
-   }
-
-   /** This method assembles the MFIntegrator for mixed forms.
-
-       @param[in] info the `CeedOperatorInfo` describing the `CeedOperator`,
-                       the `CeedOperatorInfo` type is expected to inherit from
-                       `OperatorInfo` and contain a `Context` type relevant to
-                       the qFunctions.
-       @param[in] trial_fes the trial `FiniteElementSpace` for the form,
-       @param[in] test_fes the test `FiniteElementSpace` for the form,
-       @param[in] ir the `IntegrationRule` for the numerical integration,
-       @param[in] nelem The number of elements,
-       @param[in] indices The indices of the elements of same type in the
-                          `FiniteElementSpace`. If `indices == nullptr`, assumes
-                          that the `FiniteElementSpace` is not mixed,
-       @param[in] Q `Coefficient` or `VectorCoefficient`. */
-   template <typename CeedOperatorInfo, typename CoeffType>
-   void Assemble(CeedOperatorInfo &info,
-                 const mfem::FiniteElementSpace &trial_fes,
-                 const mfem::FiniteElementSpace &test_fes,
-                 const mfem::IntegrationRule &ir,
-                 int nelem,
-                 const int* indices,
+                 const mfem::IntegrationRule &irm,
                  CoeffType *Q)
    {
       Ceed ceed(internal::ceed);
       Mesh &mesh = *trial_fes.GetMesh();
-      MFEM_VERIFY(!(!indices && mesh.GetNumGeometries(mesh.Dimension()) > 1),
-                  "Use ceed::MixedIntegrator on mixed meshes.");
-      InitCoefficient(Q, mesh, ir, nelem, indices, coeff, info.ctx);
+      InitCoefficient(Q, mesh, irm, coeff, info.ctx);
       bool const_coeff = coeff->IsConstant();
       std::string apply_func = const_coeff ? info.apply_func_mf_const
                                : info.apply_func_mf_quad;
@@ -558,7 +459,7 @@ public:
                      info.trial_op,
                      info.test_op
                     };
-
+      CeedInt nqpts, nelem = mesh.GetNE();
       CeedInt dim = mesh.SpaceDimension();
       CeedInt trial_vdim = trial_fes.GetVDim();
       CeedInt test_vdim = test_fes.GetVDim();
@@ -566,22 +467,22 @@ public:
       mesh.EnsureNodes();
       if ( &trial_fes == &test_fes )
       {
-         InitBasisAndRestriction(trial_fes, ir, nelem, indices, ceed,
+         InitBasisAndRestriction(trial_fes, irm, ceed,
                                  &trial_basis, &trial_restr);
          test_basis = trial_basis;
          test_restr = trial_restr;
       }
       else
       {
-         InitBasisAndRestriction(trial_fes, ir, nelem, indices, ceed,
+         InitBasisAndRestriction(trial_fes, irm, ceed,
                                  &trial_basis, &trial_restr);
-         InitBasisAndRestriction(test_fes, ir, nelem, indices, ceed,
+         InitBasisAndRestriction(test_fes, irm, ceed,
                                  &test_basis, &test_restr);
       }
 
       const mfem::FiniteElementSpace *mesh_fes = mesh.GetNodalFESpace();
       MFEM_VERIFY(mesh_fes, "the Mesh has no nodal FE space");
-      InitBasisAndRestriction(*mesh_fes, ir, nelem, indices, ceed, &mesh_basis,
+      InitBasisAndRestriction(*mesh_fes, irm, ceed, &mesh_basis,
                               &mesh_restr);
 
       CeedInt trial_nqpts, test_nqpts;
@@ -590,7 +491,7 @@ public:
       MFEM_VERIFY(trial_nqpts == test_nqpts,
                   "Trial and test basis must have the same number of quadrature"
                   " points.");
-      CeedInt nqpts = trial_nqpts;
+      nqpts = trial_nqpts;
 
       InitVector(*mesh.GetNodes(), node_coords);
 
@@ -671,8 +572,8 @@ public:
       // coefficient
       if (GridCoefficient *gridCoeff = dynamic_cast<GridCoefficient*>(coeff))
       {
-         InitBasisAndRestriction(*gridCoeff->gf.FESpace(), ir, nelem, indices,
-                                 ceed, &gridCoeff->basis, &gridCoeff->restr);
+         InitBasisAndRestriction(*gridCoeff->gf.FESpace(), irm, ceed,
+                                 &gridCoeff->basis, &gridCoeff->restr);
          CeedOperatorSetField(oper, "coeff", gridCoeff->restr,
                               gridCoeff->basis, gridCoeff->coeffVector);
       }

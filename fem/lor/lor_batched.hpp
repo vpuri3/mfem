@@ -13,7 +13,6 @@
 #define MFEM_LOR_BATCHED
 
 #include "lor.hpp"
-#include "../qspace.hpp"
 
 namespace mfem
 {
@@ -144,24 +143,21 @@ static T *GetIntegrator(BilinearForm &a)
    return nullptr;
 }
 
-IntegrationRule GetCollocatedIntRule(FiniteElementSpace &fes);
+#ifdef MFEM_USE_MPI
 
-template <typename INTEGRATOR>
-void ProjectLORCoefficient(BilinearForm &a, CoefficientVector &coeff_vector)
-{
-   INTEGRATOR *i = GetIntegrator<INTEGRATOR>(a);
-   if (i)
-   {
-      // const_cast since Coefficient::Eval is not const...
-      auto *coeff = const_cast<Coefficient*>(i->GetCoefficient());
-      if (coeff) { coeff_vector.Project(*coeff); }
-      else { coeff_vector.SetConstant(1.0); }
-   }
-   else
-   {
-      coeff_vector.SetConstant(0.0);
-   }
-}
+/// @brief Make @a A_hyp steal ownership of its diagonal part @a A_diag.
+///
+/// If @a A_hyp does not own I and J, then they are aliases pointing to the I
+/// and J arrays in @a A_diag. In that case, this function swaps the memory
+/// objects. Similarly for the data array.
+///
+/// After this function is called, @a A_hyp will own all of the arrays of its
+/// diagonal part.
+///
+/// @note I and J can only be aliases when HYPRE_BIGINT is disabled.
+void HypreStealOwnership(HypreParMatrix &A_hyp, SparseMatrix &A_diag);
+
+#endif
 
 /// Abstract base class for the batched LOR assembly kernels.
 class BatchedLORKernel
@@ -171,18 +167,12 @@ protected:
    Vector &X_vert; ///< Mesh coordinate vector.
    Vector &sparse_ij; ///< Local element sparsity matrix data.
    Array<int> &sparse_mapping; ///< Local element sparsity pattern.
-   IntegrationRule ir; ///< Collocated integration rule.
-   QuadratureSpace qs; ///< Quadrature space for coefficients.
-   CoefficientVector c1; ///< Coefficient of first integrator.
-   CoefficientVector c2; ///< Coefficient of second integrator.
    BatchedLORKernel(FiniteElementSpace &fes_ho_,
                     Vector &X_vert_,
                     Vector &sparse_ij_,
                     Array<int> &sparse_mapping_)
       : fes_ho(fes_ho_), X_vert(X_vert_), sparse_ij(sparse_ij_),
-        sparse_mapping(sparse_mapping_), ir(GetCollocatedIntRule(fes_ho)),
-        qs(*fes_ho.GetMesh(), ir), c1(qs, CoefficientStorage::COMPRESSED),
-        c2(qs, CoefficientStorage::COMPRESSED)
+        sparse_mapping(sparse_mapping_)
    { }
 };
 

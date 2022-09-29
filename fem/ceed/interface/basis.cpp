@@ -36,8 +36,6 @@ static CeedElemTopology GetCeedTopology(Geometry::Type geom)
          return CEED_TOPOLOGY_HEX;
       case Geometry::PRISM:
          return CEED_TOPOLOGY_PRISM;
-      case Geometry::PYRAMID:
-         return CEED_TOPOLOGY_PYRAMID;
       default:
          MFEM_ABORT("This type of element is not supported");
          return CEED_TOPOLOGY_PRISM; // Silence warning
@@ -45,11 +43,11 @@ static CeedElemTopology GetCeedTopology(Geometry::Type geom)
 }
 
 static void InitNonTensorBasis(const mfem::FiniteElementSpace &fes,
-                               const mfem::FiniteElement &fe,
                                const mfem::IntegrationRule &ir,
                                Ceed ceed, CeedBasis *basis)
 {
-   const mfem::DofToQuad &maps = fe.GetDofToQuad(ir, mfem::DofToQuad::FULL);
+   const mfem::DofToQuad &maps = fes.GetFE(0)->
+                                 GetDofToQuad(ir,mfem::DofToQuad::FULL);
    mfem::Mesh *mesh = fes.GetMesh();
    const int dim = mesh->Dimension();
    const int ndofs = maps.ndof;
@@ -64,18 +62,18 @@ static void InitNonTensorBasis(const mfem::FiniteElementSpace &fes,
       if (dim>2) { qX(2,i) = ip.z; }
       qW(i) = ip.weight;
    }
-   CeedBasisCreateH1(ceed, GetCeedTopology(fe.GetGeomType()),
+   CeedBasisCreateH1(ceed, GetCeedTopology(fes.GetFE(0)->GetGeomType()),
                      fes.GetVDim(), ndofs, nqpts,
                      maps.Bt.GetData(), maps.Gt.GetData(),
                      qX.GetData(), qW.GetData(), basis);
 }
 
 static void InitTensorBasis(const mfem::FiniteElementSpace &fes,
-                            const mfem::FiniteElement &fe,
                             const mfem::IntegrationRule &ir,
                             Ceed ceed, CeedBasis *basis)
 {
-   const mfem::DofToQuad &maps = fe.GetDofToQuad(ir, mfem::DofToQuad::TENSOR);
+   const mfem::DofToQuad &maps =
+      fes.GetFE(0)->GetDofToQuad(ir, mfem::DofToQuad::TENSOR);
    mfem::Mesh *mesh = fes.GetMesh();
    const int ndofs = maps.ndof;
    const int nqpts = maps.nqpt;
@@ -98,30 +96,28 @@ static void InitTensorBasis(const mfem::FiniteElementSpace &fes,
                            qW.GetData(), basis);
 }
 
-static void InitBasisImpl(const FiniteElementSpace &fes,
-                          const FiniteElement &fe,
-                          const IntegrationRule &ir,
-                          Ceed ceed, CeedBasis *basis)
+void InitBasis(const FiniteElementSpace &fes,
+               const IntegrationRule &irm,
+               Ceed ceed, CeedBasis *basis)
 {
    // Check for FES -> basis, restriction in hash tables
-   const int P = fe.GetDof();
-   const int Q = ir.GetNPoints();
+   const mfem::FiniteElement *fe = fes.GetFE(0);
+   const int P = fe->GetDof();
+   const int Q = irm.GetNPoints();
    const int ncomp = fes.GetVDim();
-   BasisKey basis_key(&fes, &ir, ncomp, P, Q);
+   BasisKey basis_key(&fes, &irm, ncomp, P, Q);
    auto basis_itr = mfem::internal::ceed_basis_map.find(basis_key);
-   const bool tensor = dynamic_cast<const mfem::TensorBasisElement *>
-                       (&fe) != nullptr;
 
-   // Init or retrieve key values
+   // Init or retreive key values
    if (basis_itr == mfem::internal::ceed_basis_map.end())
    {
-      if ( tensor )
+      if (UsesTensorBasis(fes))
       {
-         InitTensorBasis(fes, fe, ir, ceed, basis);
+         InitTensorBasis(fes, irm, ceed, basis);
       }
       else
       {
-         InitNonTensorBasis(fes, fe, ir, ceed, basis);
+         InitNonTensorBasis(fes, irm, ceed, basis);
       }
       mfem::internal::ceed_basis_map[basis_key] = *basis;
    }
@@ -129,24 +125,6 @@ static void InitBasisImpl(const FiniteElementSpace &fes,
    {
       *basis = basis_itr->second;
    }
-}
-
-void InitBasis(const FiniteElementSpace &fes,
-               const IntegrationRule &ir,
-               Ceed ceed, CeedBasis *basis)
-{
-   const mfem::FiniteElement &fe = *fes.GetFE(0);
-   InitBasisImpl(fes, fe, ir, ceed, basis);
-}
-
-void InitBasisWithIndices(const FiniteElementSpace &fes,
-                          const IntegrationRule &ir,
-                          int nelem,
-                          const int* indices,
-                          Ceed ceed, CeedBasis *basis)
-{
-   const mfem::FiniteElement &fe = *fes.GetFE(indices[0]);
-   InitBasisImpl(fes, fe, ir, ceed, basis);
 }
 
 #endif

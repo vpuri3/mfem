@@ -298,7 +298,7 @@ public:
    inline const T* end() const { return data + size; }
 
    /// Returns the number of bytes allocated for the array including any reserve.
-   std::size_t MemoryUsage() const { return Capacity() * sizeof(T); }
+   long MemoryUsage() const { return Capacity() * sizeof(T); }
 
    /// Shortcut for mfem::Read(a.GetMemory(), a.Size(), on_dev).
    const T *Read(bool on_dev = true) const
@@ -509,7 +509,7 @@ public:
 
    void Swap(BlockArray<T> &other);
 
-   std::size_t MemoryUsage() const;
+   long MemoryUsage() const;
 
 protected:
    template <typename cA, typename cT>
@@ -1043,7 +1043,7 @@ void BlockArray<T>::Swap(BlockArray<T> &other)
 }
 
 template<typename T>
-std::size_t BlockArray<T>::MemoryUsage() const
+long BlockArray<T>::MemoryUsage() const
 {
    return (mask+1)*sizeof(T)*blocks.Size() + blocks.MemoryUsage();
 }
