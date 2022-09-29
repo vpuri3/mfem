@@ -12,6 +12,7 @@
 #include "../general/forall.hpp"
 #include "bilininteg.hpp"
 #include "gridfunc.hpp"
+#include "qfunction.hpp"
 #include "restriction.hpp"
 
 using namespace std;
@@ -136,6 +137,9 @@ static void PADGTraceSetup(const int dim,
 
 void DGTraceIntegrator::SetupPA(const FiniteElementSpace &fes, FaceType type)
 {
+   const MemoryType mt = (pa_mt == MemoryType::DEFAULT) ?
+                         Device::GetDeviceMemoryType() : pa_mt;
+
    nf = fes.GetNFbyType(type);
    if (nf==0) { return; }
    // Assumes tensor-product elements
@@ -153,94 +157,29 @@ void DGTraceIntegrator::SetupPA(const FiniteElementSpace &fes, FaceType type)
    geom = mesh->GetFaceGeometricFactors(
              *ir,
              FaceGeometricFactors::DETERMINANTS |
-             FaceGeometricFactors::NORMALS, type);
+             FaceGeometricFactors::NORMALS, type, mt);
    maps = &el.GetDofToQuad(*ir, DofToQuad::TENSOR);
    dofs1D = maps->ndof;
    quad1D = maps->nqpt;
    pa_data.SetSize(symmDims * nq * nf, Device::GetMemoryType());
-   Vector vel;
 
-   if (VectorConstantCoefficient *c_u = dynamic_cast<VectorConstantCoefficient*>
-                                        (u))
-   {
-      vel = c_u->GetVec();
-   }
-   else if (VectorQuadratureFunctionCoefficient* qf_u =
-               dynamic_cast<VectorQuadratureFunctionCoefficient*>(u))
-   {
-      // Assumed to be in lexicographical ordering
-      const QuadratureFunction &qFun = qf_u->GetQuadFunction();
-      MFEM_VERIFY(qFun.Size() == dim * nq * nf,
-                  "Incompatible QuadratureFunction dimension \n");
+   FaceQuadratureSpace qs(*mesh, *ir, type);
+   CoefficientVector vel(*u, qs, CoefficientStorage::COMPRESSED);
 
-      MFEM_VERIFY(ir == &qFun.GetSpace()->GetElementIntRule(0),
-                  "IntegrationRule used within integrator and in"
-                  " QuadratureFunction appear to be different");
-      qFun.Read();
-      vel.MakeRef(const_cast<QuadratureFunction &>(qFun),0);
-   }
-   else
+   CoefficientVector r(qs, CoefficientStorage::COMPRESSED);
+   if (rho == nullptr)
    {
-      vel.SetSize(dim * nq * nf);
-      auto C = Reshape(vel.HostWrite(), dim, nq, nf);
-      Vector Vq(dim);
-      int f_ind = 0;
-      for (int f = 0; f < mesh->GetNumFacesWithGhost(); ++f)
-      {
-         Mesh::FaceInformation face = mesh->GetFaceInformation(f);
-         if (face.IsNonconformingCoarse())
-         {
-            // We skip nonconforming coarse faces as they are treated
-            // by the corresponding nonconforming fine faces.
-            continue;
-         }
-         else if ( face.IsOfFaceType(type) )
-         {
-            const int mask = FaceElementTransformations::HAVE_ELEM1 |
-                             FaceElementTransformations::HAVE_LOC1;
-            FaceElementTransformations &T =
-               *fes.GetMesh()->GetFaceElementTransformations(f, mask);
-            for (int q = 0; q < nq; ++q)
-            {
-               // Convert to lexicographic ordering
-               int iq = ToLexOrdering(dim, face.element[0].local_face_id,
-                                      quad1D, q);
-               T.SetAllIntPoints(&ir->IntPoint(q));
-               const IntegrationPoint &eip1 = T.GetElement1IntPoint();
-               u->Eval(Vq, *T.Elem1, eip1);
-               for (int i = 0; i < dim; ++i)
-               {
-                  C(i,iq,f_ind) = Vq(i);
-               }
-            }
-            f_ind++;
-         }
-      }
-      MFEM_VERIFY(f_ind==nf, "Incorrect number of faces.");
+      r.SetConstant(1.0);
    }
-   Vector r;
-   if (rho==nullptr)
+   else if (ConstantCoefficient *const_rho = dynamic_cast<ConstantCoefficient*>
+                                             (rho))
    {
-      r.SetSize(1);
-      r(0) = 1.0;
-   }
-   else if (ConstantCoefficient *c_rho = dynamic_cast<ConstantCoefficient*>(rho))
-   {
-      r.SetSize(1);
-      r(0) = c_rho->constant;
+      r.SetConstant(const_rho->constant);
    }
    else if (QuadratureFunctionCoefficient* qf_rho =
                dynamic_cast<QuadratureFunctionCoefficient*>(rho))
    {
-      const QuadratureFunction &qFun = qf_rho->GetQuadFunction();
-      MFEM_VERIFY(qFun.Size() == nq * nf,
-                  "Incompatible QuadratureFunction dimension \n");
-
-      MFEM_VERIFY(ir == &qFun.GetSpace()->GetElementIntRule(0),
-                  "IntegrationRule used within integrator and in"
-                  " QuadratureFunction appear to be different");
-      qFun.Read();
-      r.MakeRef(const_cast<QuadratureFunction &>(qFun),0);
+      r.MakeRef(qf_rho->GetQuadFunction());
    }
    else
    {
@@ -252,63 +191,48 @@ void DGTraceIntegrator::SetupPA(const FiniteElementSpace &fes, FaceType type)
       for (int f = 0; f < mesh->GetNumFacesWithGhost(); ++f)
       {
          Mesh::FaceInformation face = mesh->GetFaceInformation(f);
-         if (face.IsNonconformingCoarse())
+         if (face.IsNonconformingCoarse() || !face.IsOfFaceType(type))
          {
             // We skip nonconforming coarse faces as they are treated
             // by the corresponding nonconforming fine faces.
             continue;
          }
-         else if ( face.IsOfFaceType(type) )
+         FaceElementTransformations &T =
+            *fes.GetMesh()->GetFaceElementTransformations(f);
+         for (int q = 0; q < nq; ++q)
          {
-            FaceElementTransformations &T =
-               *fes.GetMesh()->GetFaceElementTransformations(f);
-            for (int q = 0; q < nq; ++q)
+            // Convert to lexicographic ordering
+            int iq = ToLexOrdering(dim, face.element[0].local_face_id,
+                                   quad1D, q);
+
+            T.SetAllIntPoints(&ir->IntPoint(q));
+            const IntegrationPoint &eip1 = T.GetElement1IntPoint();
+            const IntegrationPoint &eip2 = T.GetElement2IntPoint();
+            double rq;
+
+            if (face.IsBoundary())
             {
-               // Convert to lexicographic ordering
-               int iq = ToLexOrdering(dim, face.element[0].local_face_id,
-                                      quad1D, q);
-
-               T.SetAllIntPoints(&ir->IntPoint(q));
-               const IntegrationPoint &eip1 = T.GetElement1IntPoint();
-               const IntegrationPoint &eip2 = T.GetElement2IntPoint();
-               double rq;
-
-               if ( face.IsBoundary() )
-               {
-                  rq = rho->Eval(*T.Elem1, eip1);
-               }
-               else
-               {
-                  double udotn = 0.0;
-                  for (int d=0; d<dim; ++d)
-                  {
-                     udotn += C_vel(d,iq,f_ind)*n(iq,d,f_ind);
-                  }
-                  if (udotn >= 0.0) { rq = rho->Eval(*T.Elem2, eip2); }
-                  else { rq = rho->Eval(*T.Elem1, eip1); }
-               }
-               C(iq,f_ind) = rq;
+               rq = rho->Eval(*T.Elem1, eip1);
             }
-            f_ind++;
+            else
+            {
+               double udotn = 0.0;
+               for (int d=0; d<dim; ++d)
+               {
+                  udotn += C_vel(d,iq,f_ind)*n(iq,d,f_ind);
+               }
+               if (udotn >= 0.0) { rq = rho->Eval(*T.Elem2, eip2); }
+               else { rq = rho->Eval(*T.Elem1, eip1); }
+            }
+            C(iq,f_ind) = rq;
          }
+         f_ind++;
       }
       MFEM_VERIFY(f_ind==nf, "Incorrect number of faces.");
    }
-
-   if (external_vel)
-   {
-
-      PADGTraceSetup(dim, dofs1D, quad1D, nf, ir->GetWeights(),
-                     geom->detJ, geom->normal, r, *external_vel,
-                     alpha, beta, pa_data);
-   }
-   else
-   {
-
-      PADGTraceSetup(dim, dofs1D, quad1D, nf, ir->GetWeights(),
-                     geom->detJ, geom->normal, r, vel,
-                     alpha, beta, pa_data);
-   }
+   PADGTraceSetup(dim, dofs1D, quad1D, nf, ir->GetWeights(),
+                  geom->detJ, geom->normal, r, vel,
+                  alpha, beta, pa_data);
 }
 
 void DGTraceIntegrator::AssemblePAInteriorFaces(const FiniteElementSpace& fes)
@@ -689,16 +613,13 @@ static void PADGTraceApply(const int dim,
                            const Vector &x,
                            Vector &y)
 {
-
    if (dim == 2)
    {
       switch ((D1D << 4 ) | Q1D)
       {
          case 0x22: return PADGTraceApply2D<2,2>(NF,B,Bt,op,x,y);
          case 0x33: return PADGTraceApply2D<3,3>(NF,B,Bt,op,x,y);
-         case 0x34: return PADGTraceApply2D<3,4>(NF,B,Bt,op,x,y);
          case 0x44: return PADGTraceApply2D<4,4>(NF,B,Bt,op,x,y);
-         case 0x46: return PADGTraceApply2D<4,6>(NF,B,Bt,op,x,y);
          case 0x55: return PADGTraceApply2D<5,5>(NF,B,Bt,op,x,y);
          case 0x66: return PADGTraceApply2D<6,6>(NF,B,Bt,op,x,y);
          case 0x77: return PADGTraceApply2D<7,7>(NF,B,Bt,op,x,y);
@@ -711,9 +632,10 @@ static void PADGTraceApply(const int dim,
    {
       switch ((D1D << 4 ) | Q1D)
       {
+         case 0x22: return SmemPADGTraceApply3D<2,2,1>(NF,B,Bt,op,x,y);
          case 0x23: return SmemPADGTraceApply3D<2,3,1>(NF,B,Bt,op,x,y);
-         case 0x34: return SmemPADGTraceApply3D<3,4,1>(NF,B,Bt,op,x,y);
-         case 0x45: return SmemPADGTraceApply3D<4,5,1>(NF,B,Bt,op,x,y);
+         case 0x34: return SmemPADGTraceApply3D<3,4,2>(NF,B,Bt,op,x,y);
+         case 0x45: return SmemPADGTraceApply3D<4,5,2>(NF,B,Bt,op,x,y);
          case 0x56: return SmemPADGTraceApply3D<5,6,1>(NF,B,Bt,op,x,y);
          case 0x67: return SmemPADGTraceApply3D<6,7,1>(NF,B,Bt,op,x,y);
          case 0x78: return SmemPADGTraceApply3D<7,8,1>(NF,B,Bt,op,x,y);
@@ -1127,9 +1049,7 @@ static void PADGTraceApplyTranspose(const int dim,
       {
          case 0x22: return PADGTraceApplyTranspose2D<2,2>(NF,B,Bt,op,x,y);
          case 0x33: return PADGTraceApplyTranspose2D<3,3>(NF,B,Bt,op,x,y);
-         case 0x34: return PADGTraceApplyTranspose2D<3,4>(NF,B,Bt,op,x,y);
          case 0x44: return PADGTraceApplyTranspose2D<4,4>(NF,B,Bt,op,x,y);
-         case 0x46: return PADGTraceApplyTranspose2D<4,6>(NF,B,Bt,op,x,y);
          case 0x55: return PADGTraceApplyTranspose2D<5,5>(NF,B,Bt,op,x,y);
          case 0x66: return PADGTraceApplyTranspose2D<6,6>(NF,B,Bt,op,x,y);
          case 0x77: return PADGTraceApplyTranspose2D<7,7>(NF,B,Bt,op,x,y);
@@ -1142,6 +1062,7 @@ static void PADGTraceApplyTranspose(const int dim,
    {
       switch ((D1D << 4 ) | Q1D)
       {
+         case 0x22: return SmemPADGTraceApplyTranspose3D<2,2>(NF,B,Bt,op,x,y);
          case 0x23: return SmemPADGTraceApplyTranspose3D<2,3>(NF,B,Bt,op,x,y);
          case 0x34: return SmemPADGTraceApplyTranspose3D<3,4>(NF,B,Bt,op,x,y);
          case 0x45: return SmemPADGTraceApplyTranspose3D<4,5>(NF,B,Bt,op,x,y);

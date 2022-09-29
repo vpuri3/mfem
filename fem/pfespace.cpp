@@ -129,7 +129,7 @@ void ParFiniteElementSpace::ParInit(ParMesh *pm)
       ApplyLDofSigns(*elem_dof);
    }
 
-   // Check for shared trianglular faces with interior Nedelec DoFs
+   // Check for shared triangular faces with interior Nedelec DoFs
    CheckNDSTriaDofs();
 }
 
@@ -194,12 +194,12 @@ void ParFiniteElementSpace::Construct()
 
 void ParFiniteElementSpace::PrintPartitionStats()
 {
-   long ltdofs = ltdof_size;
-   long min_ltdofs, max_ltdofs, sum_ltdofs;
+   long long ltdofs = ltdof_size;
+   long long min_ltdofs, max_ltdofs, sum_ltdofs;
 
-   MPI_Reduce(&ltdofs, &min_ltdofs, 1, MPI_LONG, MPI_MIN, 0, MyComm);
-   MPI_Reduce(&ltdofs, &max_ltdofs, 1, MPI_LONG, MPI_MAX, 0, MyComm);
-   MPI_Reduce(&ltdofs, &sum_ltdofs, 1, MPI_LONG, MPI_SUM, 0, MyComm);
+   MPI_Reduce(&ltdofs, &min_ltdofs, 1, MPI_LONG_LONG, MPI_MIN, 0, MyComm);
+   MPI_Reduce(&ltdofs, &max_ltdofs, 1, MPI_LONG_LONG, MPI_MAX, 0, MyComm);
+   MPI_Reduce(&ltdofs, &sum_ltdofs, 1, MPI_LONG_LONG, MPI_SUM, 0, MyComm);
 
    if (MyRank == 0)
    {
@@ -219,14 +219,14 @@ void ParFiniteElementSpace::PrintPartitionStats()
          for (int i = 1; i < NRanks; i++)
          {
             MPI_Status status;
-            MPI_Recv(&ltdofs, 1, MPI_LONG, i, 123, MyComm, &status);
+            MPI_Recv(&ltdofs, 1, MPI_LONG_LONG, i, 123, MyComm, &status);
             mfem::out << " " << ltdofs;
          }
          mfem::out << "\n";
       }
       else
       {
-         MPI_Send(&ltdofs, 1, MPI_LONG, 0, 123, MyComm);
+         MPI_Send(&ltdofs, 1, MPI_LONG_LONG, 0, 123, MyComm);
       }
    }
 }
@@ -960,9 +960,9 @@ void ParFiniteElementSpace::Build_Dof_TrueDof_Matrix() const // matrix P
    P->GetDiag(Pdiag);
    R = Transpose(Pdiag);
 
-#ifdef HYPRE_USING_GPU
-   hypre_ParCSRMatrixLocalTranspose(*P);
-#endif
+   // The following call ensures that the action of the transpose of P is
+   // performed fast when HYPRE is built for GPUs.
+   P->EnsureMultTranspose();
 }
 
 HypreParMatrix *ParFiniteElementSpace::GetPartialConformingInterpolation()
@@ -2629,9 +2629,9 @@ int ParFiniteElementSpace
       *P_ = MakeVDimHypreMatrix(pmatrix, ndofs, num_true_dofs,
                                 dof_offs, tdof_offs);
 
-#ifdef HYPRE_USING_GPU
-      hypre_ParCSRMatrixLocalTranspose(**P_);
-#endif
+      // The following call ensures that the action of the transpose of *P_ is
+      // performed fast when HYPRE is built for GPUs.
+      (*P_)->EnsureMultTranspose();
    }
 
    // clean up possible remaining messages in the queue to avoid receiving
@@ -2673,8 +2673,6 @@ int ParFiniteElementSpace
                 << std::endl;
    }
 #endif
-
-
 
    return num_true_dofs*vdim;
 }
