@@ -14,6 +14,7 @@
 
 #include "config/config.hpp"
 
+#include "general/forall.hpp"
 #include "general/error.hpp"
 #include "general/device.hpp"
 #include "general/array.hpp"

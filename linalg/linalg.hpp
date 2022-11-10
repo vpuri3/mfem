@@ -18,6 +18,7 @@
 #include "operator.hpp"
 #include "matrix.hpp"
 #include "sparsemat.hpp"
+#include "libBatchSolver.hpp"
 #include "complex_operator.hpp"
 #include "complex_densemat.hpp"
 #include "blockvector.hpp"
@@ -32,6 +33,7 @@
 #include "invariants.hpp"
 #include "constraints.hpp"
 #include "auxiliary.hpp"
+#include "dtensor.hpp"
 
 #ifdef MFEM_USE_AMGX
 #include "amgxsolver.hpp"
