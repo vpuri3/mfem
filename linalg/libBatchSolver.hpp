@@ -121,11 +121,9 @@ class LibBatchMult
 {
 
 private:
-
    DenseTensor &MatrixBatch;
 
    int mat_size, num_mats;
-
 public:
    LibBatchMult() = delete;
 
@@ -134,11 +132,9 @@ public:
       num_mats(MatrixBatch.SizeK()),
       MatrixBatch(MatrixBatch_) {};
 
-   //Mult linear system Ax = b
+   //Block mult of linear system
    void Mult(const Vector &b, Vector &x);
-
 };
-
 
 
 } // namespace mfem

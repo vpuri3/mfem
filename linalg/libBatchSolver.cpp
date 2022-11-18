@@ -96,13 +96,14 @@ void LibBatchSolve::Setup()
 void LibBatchSolve::SolveLU(const Vector &b, Vector &x)
 {
 
+  std::cout<<"Solving with LU factors"<<std::endl;
    x = b;
 
 #if defined(MFEM_USE_CUDA) || defined(MFEM_USE_HIP)
 
    //Need to figure out how this should look...
 
-   /*
+
    vector_array.SetSize(num_mats);
 
    double *x_ptr_base = x.ReadWrite();
@@ -113,47 +114,37 @@ void LibBatchSolve::SolveLU(const Vector &b, Vector &x)
      vector_array.HostWrite()[i] = x_ptr_base + i * mat_size;
    }
 
-   MFEM_SUB_cu_or_hip(blasStatus_t) status =
+   MFEM_SUB_cu_or_hip(blasStatus_t) status_lo =
      MFEM_SUB_cu_or_hip(blasDtrsmBatched) (MFEM_SUB_Cuda_or_Hip(BLAS::Handle)(),
-                                      MFEM_SUB_CU_or_HIP(BLAS_SIDE_LEFT),
-                                      MFEM_SUB_CU_or_HIP(BLAS_FILL_MODE_UPPER),
-                                      MFEM_SUB_CU_or_HIP(BLAS_OP_N),
-                                      MFEM_SUB_CU_or_HIP(BLAS_DIAG_NON_UNIT),
-                                      mat_size,
-                                      1,
-                                      &alpha,
-                                      lu_ptr_array.Read(),
-                                      mat_size,
-                                      vector_array.ReadWrite(),
-                                      mat_size);
-
-   MFEM_SUB_cu_or_hip(blasStatus_t) status =
-     MFEM_SUB_cu_or_hip(blasDtrsmBatched) (MFEM_SUB_Cuda_or_Hip(BLAS::Handle)(),
-                                      MFEM_SUB_CU_or_HIP(BLAS_SIDE_LEFT),
-                                      MFEM_SUB_CU_or_HIP(BLAS_FILL_MODE_LOWER),
-                                      MFEM_SUB_CU_or_HIP(BLAS_OP_N),
-                                      MFEM_SUB_CU_or_HIP(BLAS_DIAG_UNIT),
-                                      mat_size,
-                                      1,
-                                      &alpha,
-                                      lu_ptr_array.Read(),
-                                      mat_size,
-                                      vector_array.ReadWrite(),
-                                      mat_size);
-   */
-
-   /*
-   MFEM_SUB_cu_or_hip(blasStatus_t) status =
-     MFEM_SUB_cu_or_hip(blasDgetriBatched)(MFEM_SUB_Cuda_or_Hip(BLAS::Handle)(),
+                                           MFEM_SUB_CU_or_HIP(BLAS_SIDE_LEFT),
+                                           MFEM_SUB_CU_or_HIP(BLAS_FILL_MODE_LOWER),
+                                           MFEM_SUB_CU_or_HIP(BLAS_OP_N),
+                                           MFEM_SUB_CU_or_HIP(BLAS_DIAG_UNIT),
                                            mat_size,
+                                           1,
+                                           &alpha,
                                            lu_ptr_array.Read(),
                                            mat_size,
-                                           P.Write(),
                                            vector_array.ReadWrite(),
                                            mat_size,
-                                           info_array.Write(),
                                            num_mats);
-   */
+
+   MFEM_SUB_cu_or_hip(blasStatus_t) status_upp =
+     MFEM_SUB_cu_or_hip(blasDtrsmBatched) (MFEM_SUB_Cuda_or_Hip(BLAS::Handle)(),
+                                           MFEM_SUB_CU_or_HIP(BLAS_SIDE_LEFT),
+                                           MFEM_SUB_CU_or_HIP(BLAS_FILL_MODE_UPPER),
+                                           MFEM_SUB_CU_or_HIP(BLAS_OP_N),
+                                           MFEM_SUB_CU_or_HIP(BLAS_DIAG_NON_UNIT),
+                                           mat_size,
+                                           1,
+                                           &alpha,
+                                           lu_ptr_array.Read(),
+                                           mat_size,
+                                           vector_array.ReadWrite(),
+                                           mat_size,
+                                           num_mats);
+
+
 #endif
 }
 
