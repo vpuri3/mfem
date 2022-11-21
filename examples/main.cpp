@@ -114,7 +114,7 @@ int main(int argc, char *argv[])
    BatchLUFactor(BatchLU, P);
    BatchLUSolve(BatchLU, P, x_ref);
 
-   LibBatchSolve libSolver(massMats, LibBatchMode::INVERSE);
+   LibBatchSolve libSolver(massMats, LibBatchMode::LU);
 
    libSolver.Setup();
 
@@ -132,7 +132,7 @@ int main(int argc, char *argv[])
    double error = x_ref.Norml2();
    if (error > 1e-10)
    {
-      std::cout<<"error too high! error = "<< error<<std::endl;
+      std::cout<<"Solve error too high! error = "<< error<<std::endl;
    }
    else
    {
