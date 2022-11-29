@@ -57,8 +57,11 @@ MAXWELL_OBJ = $(MAXWELL_SRC:.cpp=.o)
 PMAXWELL_SRC = pmaxwell.cpp $(DPG_COMPLEX_PAR_SRC)
 PMAXWELL_OBJ = $(PMAXWELL_SRC:.cpp=.o)
 
+PMAXWELL_TOKAMAK_SRC = pmaxwell-tokamak.cpp $(DPG_COMPLEX_PAR_SRC)
+PMAXWELL_TOKAMAK_OBJ = $(PMAXWELL_TOKAMAK_SRC:.cpp=.o)
+
 SEQ_MINIAPPS = diffusion convection-diffusion acoustics maxwell
-PAR_MINIAPPS = pdiffusion pconvection-diffusion pacoustics pmaxwell
+PAR_MINIAPPS = pdiffusion pconvection-diffusion pacoustics pmaxwell pmaxwell-tokamak
 
 ifeq ($(MFEM_USE_MPI),NO)
    MINIAPPS = $(SEQ_MINIAPPS)
@@ -111,6 +114,8 @@ pacoustics: $(PACOUSTICS_OBJ)
 pmaxwell: $(PMAXWELL_OBJ)
 	$(MFEM_CXX) $(MFEM_LINK_FLAGS) -o $@ $(PMAXWELL_OBJ) $(COMMON_LIB) $(MFEM_LIBS)
 
+pmaxwell-tokamak: $(PMAXWELL_TOKAMAK_OBJ)
+	$(MFEM_CXX) $(MFEM_LINK_FLAGS) -o $@ $(PMAXWELL_TOKAMAK_OBJ) $(COMMON_LIB) $(MFEM_LIBS)
 
 # Rule for building lib-common
 lib-common:
