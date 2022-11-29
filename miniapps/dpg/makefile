@@ -158,7 +158,7 @@ $(MFEM_LIB_FILE):
 clean: clean-build clean-exec
 
 clean-build:
-	rm -f *.o *~ diffusion convection-diffusion pdiffusion pconvection-diffusion
+	rm -f *.o *~ diffusion convection-diffusion pdiffusion pconvection-diffusion pmaxwell-tokamak
 	rm -f *.o *~ acoustics maxwell pacoustics pmaxwell
 	rm -f *.o *~ $(DPG_REAL_OBJ) $(DPG_COMPLEX_OBJ)
 	rm -rf *.dSYM *.TVD.*breakpoints
