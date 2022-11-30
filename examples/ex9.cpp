@@ -66,6 +66,43 @@ double inflow_function(const Vector &x);
 // Mesh bounding box
 Vector bb_min, bb_max;
 
+//Pulling in code from Remhos:
+// Low-Order Solver.
+class LOSolver
+{
+protected:
+   FiniteElementSpace &fes;
+   double dt = -1.0; // usually not known at creation, updated later.
+
+public:
+   LOSolver(FiniteElementSpace &space) : fes(space) { }
+
+   virtual ~LOSolver() { }
+
+   virtual void UpdateTimeStep(double dt_new) { dt = dt_new; }
+
+   virtual void CalcLOSolution(const Vector &u, Vector &du) const = 0;
+};
+
+class MassBasedAvg : public LOSolver
+{
+protected:
+   //HOSolver &ho_solver;
+   const GridFunction *mesh_v;
+
+   void MassesAndVolumesAtPosition(const GridFunction &u,
+                                   const GridFunction &x,
+                                   Vector &el_mass, Vector &el_vol) const;
+
+public:
+   MassBasedAvg(FiniteElementSpace &space, const GridFunction *mesh_vel)
+      : LOSolver(space), mesh_v(mesh_vel) { }
+
+   //Assume you have u_new
+   virtual void CalcLOSolution(const Vector &u_new, Vector &du) const;
+};
+
+
 class DG_Solver : public Solver
 {
 private:
@@ -130,9 +167,14 @@ private:
    DG_Solver *dg_solver;
 
    mutable Vector z;
+   FiniteElementSpace *fes;
+   double dt = 0.0;
 
 public:
-   FE_Evolution(BilinearForm &M_, BilinearForm &K_, const Vector &b_);
+   FE_Evolution(BilinearForm &M_, BilinearForm &K_, const Vector &b_,
+                FiniteElementSpace *fes_);
+
+   void SetDt(double dt_) {dt = dt_;};
 
    virtual void Mult(const Vector &x, Vector &y) const;
    virtual void ImplicitSolve(const double dt, const Vector &x, Vector &k);
@@ -153,8 +195,8 @@ int main(int argc, char *argv[])
    bool fa = false;
    const char *device_config = "cpu";
    int ode_solver_type = 4;
-   double t_final = 10.0;
-   double dt = 0.01;
+   double t_final = 2.0;
+   double dt = 0.001;
    bool visualization = true;
    bool visit = false;
    bool paraview = false;
@@ -263,7 +305,8 @@ int main(int argc, char *argv[])
 
    // 5. Define the discontinuous DG finite element space of the given
    //    polynomial order on the refined mesh.
-   DG_FECollection fec(order, dim, BasisType::GaussLobatto);
+   //DG_FECollection fec(order, dim, BasisType::GaussLobatto);
+   H1_FECollection fec(order, dim);
    FiniteElementSpace fes(&mesh, &fec);
 
    cout << "Number of unknowns: " << fes.GetVSize() << endl;
@@ -391,7 +434,7 @@ int main(int argc, char *argv[])
    // 8. Define the time-dependent evolution operator describing the ODE
    //    right-hand side, and perform time-integration (looping over the time
    //    iterations, ti, with a time-step dt).
-   FE_Evolution adv(m, k, b);
+   FE_Evolution adv(m, k, b, &fes);
 
    double t = 0.0;
    adv.SetTime(t);
@@ -401,6 +444,8 @@ int main(int argc, char *argv[])
    for (int ti = 0; !done; )
    {
       double dt_real = min(dt, t_final - t);
+
+      adv.SetDt(dt_real);
       ode_solver->Step(u, t, dt_real);
       ti++;
 
@@ -447,10 +492,83 @@ int main(int argc, char *argv[])
    return 0;
 }
 
+void MassBasedAvg::MassesAndVolumesAtPosition(const GridFunction &u,
+                                              const GridFunction &x,
+                                              Vector &el_mass,
+                                              Vector &el_vol) const
+{
+   // Only the order of the transformation matters.
+   auto *Tr = x.FESpace()->GetMesh()->GetElementTransformation(0);
+   const FiniteElement *fe = u.FESpace()->GetFE(0);
+   const IntegrationRule &ir = MassIntegrator::GetRule(*fe, *fe, *Tr);
+   const int nqp = ir.GetNPoints();
+   const int NE = x.FESpace()->GetNE();
+
+   GeometricFactors geom(x, ir, GeometricFactors::DETERMINANTS);
+   auto qi_u = u.FESpace()->GetQuadratureInterpolator(ir);
+   Vector u_qvals(nqp * NE);
+   // As an L2 function, u has the correct EVector lexicographic ordering.
+   qi_u->Values(u, u_qvals);
+
+   for (int k = 0; k < NE; k++)
+   {
+      el_mass(k) = 0.0;
+      el_vol(k)  = 0.0;
+      for (int q = 0; q < nqp; q++)
+      {
+         const IntegrationPoint &ip = ir.IntPoint(q);
+         el_mass(k) += ip.weight * geom.detJ(k*nqp + q) * u_qvals(k*nqp + q);
+         el_vol(k)  += ip.weight * geom.detJ(k*nqp + q);
+      }
+   }
+}
+
+void MassBasedAvg::CalcLOSolution(const Vector &u_HO_new, Vector &du) const
+{
+   // Compute the new HO solution. -- we have the new HO solution
+   /*
+    Vector du_HO(u.Size());
+    ParGridFunction u_HO_new(&pfes);
+    ho_solver.CalcHOSolution(u, du_HO);
+    add(1.0, u, dt, du_HO, u_HO_new);
+   */
+
+   // Mesh positions for the new HO solution.
+   Mesh *mesh = fes.GetMesh();
+   GridFunction x_new(mesh->GetNodes()->FESpace());
+   // Copy the current nodes into x.
+   mesh->GetNodes(x_new);
+   if (mesh_v)
+   {
+      // Remap mode - get the positions of the mesh at time [t + dt].
+      x_new.Add(dt, *mesh_v);
+   }
+
+   const int NE = fes.GetNE();
+   Vector el_mass(NE), el_vol(NE);
+
+   GridFunction gf_u_HO_new(&fes);
+   gf_u_HO_new = u_HO_new;
+
+   MassesAndVolumesAtPosition(gf_u_HO_new, x_new, el_mass, el_vol);
+
+   const int ndofs = u_HO_new.Size() / NE;
+   for (int k = 0; k < NE; k++)
+   {
+      double u_LO_new = el_mass(k) / el_vol(k);
+      for (int i = 0; i < ndofs; i++)
+      {
+         du(k*ndofs + i) = (u_LO_new - u_HO_new(k*ndofs + i)) / dt;
+      }
+   }
+}
+
 
 // Implementation of class FE_Evolution
-FE_Evolution::FE_Evolution(BilinearForm &M_, BilinearForm &K_, const Vector &b_)
-   : TimeDependentOperator(M_.Height()), M(M_), K(K_), b(b_), z(M_.Height())
+FE_Evolution::FE_Evolution(BilinearForm &M_, BilinearForm &K_, const Vector &b_,
+                           FiniteElementSpace *fes_)
+   : TimeDependentOperator(M_.Height()), M(M_), K(K_), b(b_), z(M_.Height()),
+     fes(fes_)
 {
    Array<int> ess_tdof_list;
    if (M.GetAssemblyLevel() == AssemblyLevel::LEGACY)
@@ -475,10 +593,50 @@ FE_Evolution::FE_Evolution(BilinearForm &M_, BilinearForm &K_, const Vector &b_)
 
 void FE_Evolution::Mult(const Vector &x, Vector &y) const
 {
+   //Compute RHS
    // y = M^{-1} (K x + b)
    K.Mult(x, z);
    z += b;
    M_solver.Mult(z, y);
+
+   //std::cout<<"dt = "<<dt<<std::endl;
+#if 1
+   Vector x_new(x);
+   x_new.Add(dt, y);
+
+   const int order = 3; //hard coded for now
+   DG_FECollection dg_fec(order, fes->GetMesh()->Dimension(),
+                          BasisType::GaussLobatto);
+   FiniteElementSpace dg_fes(fes->GetMesh(), &dg_fec);
+
+   //Compute cell average solution
+   MassBasedAvg cellavg(dg_fes, nullptr);
+   cellavg.UpdateTimeStep(dt);
+
+   const Operator *elem_restrict_lex =
+      fes->GetElementRestriction(ElementDofOrdering::LEXICOGRAPHIC);
+
+   Vector y_lo_elem(elem_restrict_lex->Height());
+   Vector x_new_elem(elem_restrict_lex->Height());
+
+   elem_restrict_lex->Mult(x_new, x_new_elem);
+   cellavg.CalcLOSolution(x_new_elem, y_lo_elem);
+
+   //y_lo_elem.Print(); exit(-1);
+
+   GridFunction dg_y_lo(&dg_fes);
+   dg_y_lo = y_lo_elem;
+   GridFunctionCoefficient dg_y_lo_coeff(&dg_y_lo);
+
+   //Project L2 into
+   GridFunction h1_y(fes);
+
+   h1_y.ProjectDiscCoefficient(dg_y_lo_coeff,GridFunction::ARITHMETIC);
+   //GridFunction::HARMONIC);
+
+
+   y = h1_y;
+#endif
 }
 
 void FE_Evolution::ImplicitSolve(const double dt, const Vector &x, Vector &k)
