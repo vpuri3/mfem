@@ -118,8 +118,8 @@ int main(int argc, char *argv[])
 
    // const char *mesh_file = "tokamak_100k.msh";
    // const char *mesh_file = "tokamak_200k.msh";
-   const char *mesh_file = "meshes/tokamak_100k.msh";
-   // const char *mesh_file = "data/tokamak_300k.msh";
+   // const char *mesh_file = "meshes/tokamak_100k.msh";
+   const char *mesh_file = "data/solmesh_300k.mesh";
    const char * eps_r_file =
       "data/solr_epsxxepsxyepsxzepsyxepsyyepsyzepszxepszyepszz_300k.gf";
    const char * eps_i_file =
@@ -199,8 +199,8 @@ int main(int argc, char *argv[])
    MatrixConstantCoefficient eps_r_cf(Id);
    MatrixConstantCoefficient eps_i_cf(zmat);
 
-   // EpsilonMatrixCoefficient eps_2r_cf(eps_r_file,&mesh,&pmesh);
-   // EpsilonMatrixCoefficient eps_i_cf(eps_i_file,&mesh,&pmesh);
+   // EpsilonMatrixCoefficient eps_2r_cf(eps_i_file,&mesh,&pmesh);
+   // EpsilonMatrixCoefficient eps_2i_cf(eps_r_file,&mesh,&pmesh);
 
    mesh.Clear();
 
