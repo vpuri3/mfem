@@ -68,8 +68,8 @@ private:
    int dim;
 public:
    EpsilonMatrixCoefficient(const char * filename, Mesh * mesh_, ParMesh * pmesh_)
-      : dim(mesh_->Dimension()), MatrixArrayCoefficient(dim), mesh(mesh_),
-        pmesh(pmesh_)
+      : MatrixArrayCoefficient(mesh_->Dimension()), mesh(mesh_), pmesh(pmesh_),
+        dim(mesh_->Dimension())
    {
       std::filebuf fb;
       fb.open(filename,std::ios::in);
@@ -86,6 +86,7 @@ public:
       GridFunction gf;
       pgfs.SetSize(vdim);
       gf_cfs.SetSize(vdim);
+
       for (int i = 0; i<dim; i++)
       {
          for (int j = 0; j<dim; j++)
@@ -100,7 +101,7 @@ public:
    }
    ~EpsilonMatrixCoefficient()
    {
-      for (int i = 0; pgfs.Size(); i++)
+      for (int i = 0; i<pgfs.Size(); i++)
       {
          delete pgfs[i];
       }
@@ -119,11 +120,9 @@ int main(int argc, char *argv[])
    // const char *mesh_file = "tokamak_100k.msh";
    // const char *mesh_file = "tokamak_200k.msh";
    // const char *mesh_file = "meshes/tokamak_100k.msh";
-   const char *mesh_file = "data/solmesh_300k.mesh";
-   const char * eps_r_file =
-      "data/solr_epsxxepsxyepsxzepsyxepsyyepsyzepszxepszyepszz_300k.gf";
-   const char * eps_i_file =
-      "data/soli_epsxxepsxyepsxzepsyxepsyyepsyzepszxepszyepszz_300k.gf";
+   const char *mesh_file = "data/mesh_100k.mesh";
+   const char * eps_r_file = "data/eps_r_100k.gf";
+   const char * eps_i_file = "data/eps_i_100k.gf";
    int order = 1;
    int delta_order = 1;
    bool visualization = false;
@@ -131,7 +130,6 @@ int main(int argc, char *argv[])
    bool static_cond = false;
    int sr = 0;
    int pr = 0;
-   bool exact_known = false;
    bool paraview = false;
    double mu = 1.0;
    double epsilon = 1.0;
@@ -196,11 +194,11 @@ int main(int argc, char *argv[])
    DenseMatrix zmat(dim); zmat = 0.0;
    MatrixConstantCoefficient identity_cf(Id);
 
-   MatrixConstantCoefficient eps_r_cf(Id);
-   MatrixConstantCoefficient eps_i_cf(zmat);
+   // MatrixConstantCoefficient eps_r_cf(Id);
+   // MatrixConstantCoefficient eps_i_cf(zmat);
 
-   // EpsilonMatrixCoefficient eps_2r_cf(eps_i_file,&mesh,&pmesh);
-   // EpsilonMatrixCoefficient eps_2i_cf(eps_r_file,&mesh,&pmesh);
+   EpsilonMatrixCoefficient eps_r_cf(eps_r_file,&mesh,&pmesh);
+   EpsilonMatrixCoefficient eps_i_cf(eps_i_file,&mesh,&pmesh);
 
    mesh.Clear();
 
@@ -460,7 +458,7 @@ int main(int argc, char *argv[])
 
       if (myid == 0)
       {
-         std::cout << "Assembly start" << endl;
+         std::cout << "Assembly started" << endl;
       }
 
       if (static_cond) { a->EnableStaticCondensation(); }
@@ -545,7 +543,7 @@ int main(int argc, char *argv[])
 
       CGSolver cg(MPI_COMM_WORLD);
       cg.SetRelTol(1e-5);
-      cg.SetMaxIter(10000);
+      cg.SetMaxIter(500);
       cg.SetPrintLevel(1);
       cg.SetPreconditioner(M);
       cg.SetOperator(blockA);

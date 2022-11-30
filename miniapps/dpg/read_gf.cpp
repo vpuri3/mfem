@@ -9,7 +9,8 @@ using namespace mfem;
 int main(int argc, char *argv[])
 {
    // 1. Parse command line options.
-   const char *mesh_file = "solmesh.mesh";
+   const char *mesh_file = "data/mesh_100k.mesh";
+   // const char *mesh_file = "mesh_300k.mesh";
 
    Mpi::Init();
    int num_procs = Mpi::WorldSize();
@@ -31,7 +32,7 @@ int main(int argc, char *argv[])
 
    std::filebuf fb;
    //   fb.open ("sol.gf",std::ios::in);
-   fb.open ("solr_epsxxepsxyepsxzepsyxepsyyepsyzepszxepszyepszz.gf",std::ios::in);
+   fb.open ("data/eps_r_100k.gf",std::ios::in);
    std::istream is(&fb);
    GridFunction * gf = new GridFunction(&mesh, is);
    fb.close();
