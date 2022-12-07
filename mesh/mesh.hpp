@@ -1786,8 +1786,6 @@ public:
       PrintCharacteristics(NULL, NULL, os);
    }
 
-   void MesquiteSmooth(const int mesquite_option = 0);
-
    /** @brief Find the ids of the elements that contain the given points, and
        their corresponding reference coordinates.
 
