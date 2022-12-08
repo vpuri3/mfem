@@ -507,9 +507,56 @@ void ComplexDPGWeakForm::Assemble(int skip_zeros)
          }
       }
 
+      bool scaling = false;
+      // for (int i = 0; i<G_r.Height(); i++)
+      // {
+      //    G_r(i,i) += 1.0e0;
+      // }
+      if (scaling)
+      {
+         Vector diagG_r;
+         G_r.GetDiag(diagG_r);
+
+
+         G_r.InvSymmetricScaling(diagG_r);
+         G_i.InvSymmetricScaling(diagG_r);
+
+         Vector sqrtd(diagG_r.Size());
+         for (int i = 0; i<sqrtd.Size(); i++)
+         {
+            sqrtd(i) = sqrt(diagG_r(i));
+            vec_r(i)*=1./sqrtd(i);
+            vec_i(i)*=1./sqrtd(i);
+         }
+
+         B_r.InvLeftScaling(sqrtd);
+         B_i.InvLeftScaling(sqrtd);
+      }
+
+
+      // if (Mpi::Root())
+      // {
+      //    mfem::out << "Gr diag = " << std::endl;
+      //    diagG_r.Print();
+      //    mfem::out << "Gi = " << std::endl;
+      //    diagG_i.Print();
+      //    mfem::out << "Gr = " << std::endl;
+      //    G_r.PrintMatlab();
+      //    mfem::out << "Gi = " << std::endl;
+      //    G_i.PrintMatlab();
+      // }
+      // add small pertubation
+      // for (int i = 0; i<G_r.Height(); i++)
+      // {
+      //    G_r(i,i) += 1e-6;
+      // }
+
+
       ComplexCholeskyFactors chol(G_r.GetData(), G_i.GetData());
       int h = G_r.Height();
-      chol.Factor(h);
+      bool info = chol.Factor(h);
+
+      MFEM_VERIFY(info, " ComplexWeakForm::Assemble: Factorization of G failed");
 
       int w = B_r.Width();
       chol.LSolve(h,w,B_r.GetData(), B_i.GetData());

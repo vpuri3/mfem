@@ -2,6 +2,8 @@
 // srun -n 256 ./pmaxwell-tokamak -o 3 -sc -rnum
 // srun -n 448 ./pmaxwell-tokamak -o 4 -sc -rnum 11.0 -sigma 2.0 -paraview
 
+// srun -n 448 ./pmaxwell-tokamak -o 4 -do 0 -sc -paraview (with the new epsilon GridFunction coefficients)
+// TODO do > 0 fails with non SPD G matrix
 // Description:
 // This example code demonstrates the use of MFEM to define and solve
 // the "ultraweak" (UW) DPG formulation for the Maxwell problem
@@ -9,16 +11,6 @@
 //      ∇×(1/μ ∇×E) - (ω^2 ϵ + i ω σ) E = Ĵ ,   in Ω
 //                E×n = E_0, on ∂Ω
 
-// It solves the following kinds of problems
-// 1) Known exact solutions with error convergence rates
-//    a) A manufactured solution problem where E is a plane beam
-// 2) Fichera "microwave" problem
-// 3) PML problems
-//    a) Generic PML problem with point source given by the load
-//    b) Plane wave scattering from a square
-//    c) PML problem with a point source prescribed on the boundary
-
-//
 // The DPG UW deals with the First Order System
 //        i ω μ H + ∇ × E = 0,   in Ω (Faraday's law)
 //            M E + ∇ × H = J,   in Ω (Ampere's law)
@@ -67,7 +59,8 @@ private:
    GridFunction * vgf = nullptr;
    int dim;
 public:
-   EpsilonMatrixCoefficient(const char * filename, Mesh * mesh_, ParMesh * pmesh_)
+   EpsilonMatrixCoefficient(const char * filename, Mesh * mesh_, ParMesh * pmesh_,
+                            double scale = 1.0)
       : MatrixArrayCoefficient(mesh_->Dimension()), mesh(mesh_), pmesh(pmesh_),
         dim(mesh_->Dimension())
    {
@@ -86,14 +79,15 @@ public:
       GridFunction gf;
       pgfs.SetSize(vdim);
       gf_cfs.SetSize(vdim);
-
       for (int i = 0; i<dim; i++)
       {
          for (int j = 0; j<dim; j++)
          {
             int k = i*dim+j;
+            // int k = j*dim+i;
             gf.MakeRef(fes,&data[k*fes->GetVSize()]);
             pgfs[k] = new ParGridFunction(pmesh,&gf,partitioning);
+            (*pgfs[k])*=scale;
             gf_cfs[k] = new GridFunctionCoefficient(pgfs[k]);
             Set(i,j,gf_cfs[k], true);
          }
@@ -120,20 +114,24 @@ int main(int argc, char *argv[])
    // const char *mesh_file = "tokamak_100k.msh";
    // const char *mesh_file = "tokamak_200k.msh";
    // const char *mesh_file = "meshes/tokamak_100k.msh";
+   // const char *mesh_file = "meshes/tokamak_100k.msh";
    const char *mesh_file = "data/mesh_100k.mesh";
    const char * eps_r_file = "data/eps_r_100k.gf";
    const char * eps_i_file = "data/eps_i_100k.gf";
    int order = 1;
    int delta_order = 1;
    bool visualization = false;
-   double rnum=1.0;
+   double rnum=15.0e6;
    bool static_cond = false;
    int sr = 0;
    int pr = 0;
    bool paraview = false;
-   double mu = 1.0;
+   double factor = 1e-1;
+   double mu = 1.257e-6/factor;
+   // double mu = 1.0;
    double epsilon = 1.0;
-   double sigma = 1.0;
+   double sigma = 0.01*factor;
+   double epsilon_scale = 8.8541878128e-12*factor;
 
    OptionsParser args(argc, argv);
    args.AddOption(&mesh_file, "-m", "--mesh",
@@ -190,22 +188,61 @@ int main(int argc, char *argv[])
 
    // Test first with identity matrix coefficient
    DenseMatrix Id(dim); Id = 0.0;
-   Id(0,0) = 1.0; Id(1,1) = 1.0; Id(2,2) = 1.0;
+   Id(0,0) = 1; Id(0,1) = 0.0; Id(0,2) = 0.0;
+   Id(1,0) = 0.0; Id(1,1) = 1; Id(1,2) = 0.0;
+   Id(2,0) = 0.0; Id(2,1) = 0.0; Id(2,2) = 1;
+   DenseMatrix C(dim); C = 0.0;
+   C(0,0) = 1.0; C(1,1) = 1.0; C(2,2) = 1.0;
    DenseMatrix zmat(dim); zmat = 0.0;
    MatrixConstantCoefficient identity_cf(Id);
 
-   // MatrixConstantCoefficient eps_r_cf(Id);
+   FiniteElementCollection *H1_fec = new H1_FECollection(1,dim);
+   ParFiniteElementSpace *H1_fes = new ParFiniteElementSpace(&pmesh,H1_fec);
+
+   // Array<ParGridFunction * > pgfs(dim*dim);
+   // Array<GridFunctionCoefficient * > pcfs(dim*dim);
+   // MatrixArrayCoefficient eps_r_cf(dim);
+   // MatrixArrayCoefficient eps_i_cf(dim);
+   // for (int i = 0; i<dim; i++)
+   // {
+   //    for (int j = 0; j<dim; j++)
+   //    {
+   //       int k = i*dim + j;
+   //       pgfs[k] = new ParGridFunction(H1_fes);
+   //       if (i == j)
+   //       {
+   //          (*pgfs[k]) = 1.0;
+   //       }
+   //       else
+   //       {
+   //          (*pgfs[k]) = 0.0;
+   //       }
+   //       pcfs[k] = new GridFunctionCoefficient(pgfs[k]);
+   //       eps_r_cf.Set(i,j,pcfs[k],false);
+   //       eps_i_cf.Set(i,j,pcfs[k], false);
+   //    }
+   // }
+   // MatrixConstantCoefficient eps_r_cf(C);
+
    // MatrixConstantCoefficient eps_i_cf(zmat);
 
-   EpsilonMatrixCoefficient eps_r_cf(eps_r_file,&mesh,&pmesh);
-   EpsilonMatrixCoefficient eps_i_cf(eps_i_file,&mesh,&pmesh);
+
+   EpsilonMatrixCoefficient eps_r_cf(eps_r_file,&mesh,&pmesh, epsilon_scale);
+   EpsilonMatrixCoefficient eps_i_cf(eps_i_file,&mesh,&pmesh, epsilon_scale);
 
    mesh.Clear();
 
 
    // Matrix Coefficient (M = -i\omega \epsilon - \sigma I);
+   // M = -i * omega * (eps_r + i eps_i) - sigmaI
+   //  = omega eps_i - sigma I + i (-omega eps_r)
    MatrixSumCoefficient Mr_cf(eps_i_cf,identity_cf,omega,-sigma);
    ScalarMatrixProductCoefficient Mi_cf(-omega,eps_r_cf);
+
+   // Matrix Coefficient eps_mat = -i\omega \epsilon
+   //                            = omega eps_mat_i + i (-omega eps_mat_r)
+   // ScalarMatrixProductCoefficient mat_eps_r_cf(omega,eps_i_cf);
+   // ScalarMatrixProductCoefficient mat_eps_i_cf(-omega,eps_r_cf);
 
 
    // Define spaces
@@ -277,6 +314,12 @@ int main(int argc, char *argv[])
    // new TransposeIntegrator(new VectorFEMassIntegrator(negsigma_cf)),
    // new TransposeIntegrator(new VectorFEMassIntegrator(negepsomeg)),0,1);
 
+   // a->AddTrialIntegrator(
+   // new TransposeIntegrator(new VectorFEMassIntegrator(negsigma_cf)), nullptr,0,1);
+   // a->AddTrialIntegrator(new TransposeIntegrator(new VectorFEMassIntegrator(mat_eps_r_cf)),
+   //                       new TransposeIntegrator(new VectorFEMassIntegrator(mat_eps_i_cf)), 0,1);
+
+
    //  (M E , G) = (M_r E, G) + i (M_i E, G)
    a->AddTrialIntegrator(
       new TransposeIntegrator(new VectorFEMassIntegrator(Mr_cf)),
@@ -292,8 +335,11 @@ int main(int argc, char *argv[])
    // test integrators
    // (∇×G ,∇× δG)
    a->AddTestIntegrator(new CurlCurlIntegrator(one),nullptr,1,1);
+
+   ConstantCoefficient l2weight(1.0);
+
    // (G,δG)
-   a->AddTestIntegrator(new VectorFEMassIntegrator(one),nullptr,1,1);
+   a->AddTestIntegrator(new VectorFEMassIntegrator(l2weight),nullptr,1,1);
 
    // i ω μ (H, F)
    a->AddTrialIntegrator(nullptr,
@@ -315,6 +361,11 @@ int main(int argc, char *argv[])
    // a->AddTestIntegrator(new MixedVectorCurlIntegrator(negsigma_cf),
    // new MixedVectorCurlIntegrator(negepsomeg),0,1);
 
+   // a->AddTestIntegrator(new MixedVectorCurlIntegrator(negsigma_cf), nullptr, 0,1);
+
+   // a->AddTestIntegrator(new MixedVectorCurlIntegrator(mat_eps_r_cf),
+   //                      new MixedVectorCurlIntegrator(mat_eps_i_cf),0,1);
+
    // (M ∇ × F, δG) = (M_r  ∇ × F, δG) + i (M_i  ∇ × F, δG)
    a->AddTestIntegrator(new MixedVectorCurlIntegrator(Mr_cf),
                         new MixedVectorCurlIntegrator(Mi_cf),0,1);
@@ -329,6 +380,15 @@ int main(int argc, char *argv[])
    // a->AddTestIntegrator(new MixedVectorWeakCurlIntegrator(negsigma_cf),
    // new MixedVectorWeakCurlIntegrator(epsomeg),1,0);
 
+   // // (Eps^* G, ∇ × δF ) - σ (G, ∇ × δF ) = (Eps_r^T G,  ∇ × δF) - i (Eps_i^T G,  ∇ × δF) - σ (G, ∇ × δF )
+   // TransposeMatrixCoefficient mat_eps_rt_cf(mat_eps_r_cf);
+   // TransposeMatrixCoefficient mat_eps_it_cf(mat_eps_i_cf);
+   // ScalarMatrixProductCoefficient neg_mat_eps_it_cf(-1.0,mat_eps_it_cf);
+   // a->AddTestIntegrator(new MixedVectorWeakCurlIntegrator(negsigma_cf), nullptr, 1,0);
+   // a->AddTestIntegrator(new MixedVectorWeakCurlIntegrator(mat_eps_rt_cf),
+   //                      new MixedVectorWeakCurlIntegrator(neg_mat_eps_it_cf), 1,0);
+
+
 
    // (M^* G, ∇ × δF ) = (Mr^T G,  ∇ × δF) - i (Mi^T G,  ∇ × δF)
    TransposeMatrixCoefficient Mrt_cf(Mr_cf);
@@ -341,8 +401,22 @@ int main(int argc, char *argv[])
    // --------------------------------------------------------------------------
    // ϵ^2 ω^2 (G,δG)
    // a->AddTestIntegrator(new VectorFEMassIntegrator(eps2omeg2),nullptr,1,1);
-   // // σ^2(G,δG)
+   // σ^2(G,δG)
    // a->AddTestIntegrator(new VectorFEMassIntegrator(sigma2_cf),nullptr,1,1);
+
+   // MatrixProductCoefficient ErErt_cf(mat_eps_r_cf,mat_eps_rt_cf);
+   // MatrixProductCoefficient EiEit_cf(mat_eps_i_cf,mat_eps_it_cf);
+   // MatrixProductCoefficient EiErt_cf(mat_eps_i_cf,mat_eps_rt_cf);
+   // MatrixProductCoefficient ErEit_cf(mat_eps_r_cf,mat_eps_it_cf);
+
+   // MatrixSumCoefficient EEr_cf(ErErt_cf,EiEit_cf);
+   // MatrixSumCoefficient EEi_cf(EiErt_cf,ErEit_cf,1.0,-1.0);
+
+   // a->AddTestIntegrator(new VectorFEMassIntegrator(EEr_cf),
+   //                      new VectorFEMassIntegrator(EEi_cf),1,1);
+
+
+
 
    // M*M^*(G,δG) = (MrMr^t + MiMi^t) + i (MiMr^t - MrMi^t)
    MatrixProductCoefficient MrMrt_cf(Mr_cf,Mrt_cf);
@@ -383,7 +457,6 @@ int main(int argc, char *argv[])
       paraview_dc->RegisterField("E_i",&E.imag());
       paraview_dc->RegisterField("H_r",&H.real());
       paraview_dc->RegisterField("H_i",&H.imag());
-      paraview_dc->Save();
    }
 
    // internal bdr attributes
@@ -542,7 +615,7 @@ int main(int argc, char *argv[])
 
 
       CGSolver cg(MPI_COMM_WORLD);
-      cg.SetRelTol(1e-5);
+      cg.SetRelTol(1e-6);
       cg.SetMaxIter(500);
       cg.SetPrintLevel(1);
       cg.SetPreconditioner(M);
