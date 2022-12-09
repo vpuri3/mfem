@@ -115,18 +115,22 @@ int main(int argc, char *argv[])
    // const char *mesh_file = "tokamak_200k.msh";
    // const char *mesh_file = "meshes/tokamak_100k.msh";
    // const char *mesh_file = "meshes/tokamak_100k.msh";
-   const char *mesh_file = "data/mesh_100k.mesh";
-   const char * eps_r_file = "data/eps_r_100k.gf";
-   const char * eps_i_file = "data/eps_i_100k.gf";
+
+   // const char *mesh_file = "data/mesh_100k.mesh";
+   // const char * eps_r_file = "data/eps_r_100k.gf";
+   // const char * eps_i_file = "data/eps_i_100k.gf";
+
+   const char *mesh_file = "meshes/box.msh";
+
    int order = 1;
    int delta_order = 1;
    bool visualization = false;
-   double rnum=15.0e6;
+   double rnum=50.0e6;
    bool static_cond = false;
    int sr = 0;
    int pr = 0;
    bool paraview = false;
-   double factor = 1e-1;
+   double factor = 1.0;
    double mu = 1.257e-6/factor;
    // double mu = 1.0;
    double epsilon = 1.0;
@@ -196,8 +200,8 @@ int main(int argc, char *argv[])
    DenseMatrix zmat(dim); zmat = 0.0;
    MatrixConstantCoefficient identity_cf(Id);
 
-   FiniteElementCollection *H1_fec = new H1_FECollection(1,dim);
-   ParFiniteElementSpace *H1_fes = new ParFiniteElementSpace(&pmesh,H1_fec);
+   // FiniteElementCollection *H1_fec = new H1_FECollection(1,dim);
+   // ParFiniteElementSpace *H1_fes = new ParFiniteElementSpace(&pmesh,H1_fec);
 
    // Array<ParGridFunction * > pgfs(dim*dim);
    // Array<GridFunctionCoefficient * > pcfs(dim*dim);
@@ -226,9 +230,29 @@ int main(int argc, char *argv[])
 
    // MatrixConstantCoefficient eps_i_cf(zmat);
 
+   DenseMatrix mat_eps_r(dim);
+   mat_eps_r(0,0) = -3.18447132e+02; mat_eps_r(0,1) = -7.73308634e-11;
+   mat_eps_r(0,2) =  2.26832549e+02;
+   mat_eps_r(1,0) = -7.73030845e-11; mat_eps_r(1,1) = -1.26300045e+06;
+   mat_eps_r(1,2) = -7.73308634e-11;
+   mat_eps_r(2,0) = -2.26832549e+02; mat_eps_r(2,1) = -7.73030845e-11;
+   mat_eps_r(2,2) = -3.18447132e+02;
+   DenseMatrix mat_eps_i(dim);
+   mat_eps_i(0,0) =  3.06793840e+02; mat_eps_i(0,1) =  4.06300785e-11;
+   mat_eps_i(0,2) =  7.95645437e+02;
+   mat_eps_i(1,0) =  4.07275170e-11; mat_eps_i(1,1) =  6.64641976e+05;
+   mat_eps_i(1,2) =  4.06300785e-11;
+   mat_eps_i(2,0) = -7.95645437e+02; mat_eps_i(2,1) =  4.07275170e-11;
+   mat_eps_i(2,2) =  3.06793840e+02;
 
-   EpsilonMatrixCoefficient eps_r_cf(eps_r_file,&mesh,&pmesh, epsilon_scale);
-   EpsilonMatrixCoefficient eps_i_cf(eps_i_file,&mesh,&pmesh, epsilon_scale);
+   mat_eps_r *= epsilon_scale;
+   mat_eps_i *= epsilon_scale;
+
+   MatrixConstantCoefficient eps_r_cf(mat_eps_r);
+   MatrixConstantCoefficient eps_i_cf(mat_eps_i);
+
+   // EpsilonMatrixCoefficient eps_r_cf(eps_r_file,&mesh,&pmesh, epsilon_scale);
+   // EpsilonMatrixCoefficient eps_i_cf(eps_i_file,&mesh,&pmesh, epsilon_scale);
 
    mesh.Clear();
 
@@ -472,7 +496,6 @@ int main(int argc, char *argv[])
       Array<int> one_bdr;
       Array<int> negone_bdr;
 
-
       if (myid == 0)
       {
          std::cout << "Attributes" << endl;
@@ -485,15 +508,17 @@ int main(int argc, char *argv[])
          negone_bdr.SetSize(pmesh.bdr_attributes.Max());
          ess_bdr = 1;
          // need to exclude these attributes
-         for (int i = 0; i<internal_bdr.Size(); i++)
-         {
-            ess_bdr[internal_bdr[i]-1] = 0;
-         }
+         // for (int i = 0; i<internal_bdr.Size(); i++)
+         // {
+         //    ess_bdr[internal_bdr[i]-1] = 0;
+         // }
          hatE_fes->GetEssentialTrueDofs(ess_bdr, ess_tdof_list);
          one_bdr = 0;
          negone_bdr = 0;
-         one_bdr[234] = 1;
-         negone_bdr[235] = 1;
+         // one_bdr[234] = 1;
+         // negone_bdr[235] = 1;
+         one_bdr[6] = 1;
+         negone_bdr[7] = 1;
       }
 
       if (myid == 0)
