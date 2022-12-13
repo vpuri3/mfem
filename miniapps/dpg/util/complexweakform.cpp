@@ -508,10 +508,6 @@ void ComplexDPGWeakForm::Assemble(int skip_zeros)
       }
 
       bool scaling = false;
-      // for (int i = 0; i<G_r.Height(); i++)
-      // {
-      //    G_r(i,i) += 1.0e0;
-      // }
       if (scaling)
       {
          Vector diagG_r;

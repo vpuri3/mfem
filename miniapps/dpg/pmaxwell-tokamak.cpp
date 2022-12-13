@@ -116,11 +116,11 @@ int main(int argc, char *argv[])
    // const char *mesh_file = "meshes/tokamak_100k.msh";
    // const char *mesh_file = "meshes/tokamak_100k.msh";
 
-   // const char *mesh_file = "data/mesh_100k.mesh";
-   // const char * eps_r_file = "data/eps_r_100k.gf";
-   // const char * eps_i_file = "data/eps_i_100k.gf";
+   const char *mesh_file = "data/mesh_300k.mesh";
+   const char * eps_r_file = "data/eps_r_300k.gf";
+   const char * eps_i_file = "data/eps_i_300k.gf";
 
-   const char *mesh_file = "meshes/box.msh";
+   // const char *mesh_file = "meshes/box.msh";
 
    int order = 1;
    int delta_order = 1;
@@ -248,11 +248,11 @@ int main(int argc, char *argv[])
    mat_eps_r *= epsilon_scale;
    mat_eps_i *= epsilon_scale;
 
-   MatrixConstantCoefficient eps_r_cf(mat_eps_r);
-   MatrixConstantCoefficient eps_i_cf(mat_eps_i);
+   // MatrixConstantCoefficient eps_r_cf(mat_eps_r);
+   // MatrixConstantCoefficient eps_i_cf(mat_eps_i);
 
-   // EpsilonMatrixCoefficient eps_r_cf(eps_r_file,&mesh,&pmesh, epsilon_scale);
-   // EpsilonMatrixCoefficient eps_i_cf(eps_i_file,&mesh,&pmesh, epsilon_scale);
+   EpsilonMatrixCoefficient eps_r_cf(eps_r_file,&mesh,&pmesh, epsilon_scale);
+   EpsilonMatrixCoefficient eps_i_cf(eps_i_file,&mesh,&pmesh, epsilon_scale);
 
    mesh.Clear();
 
@@ -451,8 +451,21 @@ int main(int argc, char *argv[])
    MatrixSumCoefficient MMr_cf(MrMrt_cf,MiMit_cf);
    MatrixSumCoefficient MMi_cf(MiMrt_cf,MrMit_cf,1.0,-1.0);
 
-   a->AddTestIntegrator(new VectorFEMassIntegrator(MMr_cf),
-                        new VectorFEMassIntegrator(MMi_cf),1,1);
+   const IntegrationRule *irs[Geometry::NumGeom];
+   int order_quad = 2*order + 2;
+   for (int i = 0; i < Geometry::NumGeom; ++i)
+   {
+      irs[i] = &(IntRules.Get(i, order_quad));
+   }
+   const IntegrationRule &ir = IntRules.Get(pmesh.GetElementGeometry(0),
+                                            2*test_order + 2);
+
+   VectorFEMassIntegrator * integ_r = new VectorFEMassIntegrator(MMr_cf);
+   integ_r->SetIntegrationRule(ir);
+   VectorFEMassIntegrator * integ_i = new VectorFEMassIntegrator(MMi_cf);
+   integ_i->SetIntegrationRule(ir);
+
+   a->AddTestIntegrator(integ_r,integ_i,1,1);
    // --------------------------------------------------------------------------
 
 
