@@ -49,6 +49,10 @@ HypreParMatrix *MakeDiagonalMatrix(Vector &diag,
       });
    }
 
+/// Return a new HypreParMatrix with given diagonal entries
+HypreParMatrix *MakeDiagonalMatrix(Vector &diag, const ParFiniteElementSpace &fes)
+{
+   SparseMatrix diag_spmat(diag);
    HYPRE_BigInt global_size = fes.GlobalTrueVSize();
    HYPRE_BigInt *row_starts = fes.GetTrueDofOffsets();
    HypreParMatrix D(MPI_COMM_WORLD, global_size, row_starts, &diag_spmat);
