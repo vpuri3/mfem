@@ -60,8 +60,14 @@ PMAXWELL_OBJ = $(PMAXWELL_SRC:.cpp=.o)
 PMAXWELL_TOKAMAK_SRC = pmaxwell-tokamak.cpp $(DPG_COMPLEX_PAR_SRC)
 PMAXWELL_TOKAMAK_OBJ = $(PMAXWELL_TOKAMAK_SRC:.cpp=.o)
 
+PMAXWELL_FEM_TOKAMAK_SRC = pmaxwell-fem-tokamak.cpp $(DPG_COMPLEX_PAR_SRC)
+PMAXWELL_FEM_TOKAMAK_OBJ = $(PMAXWELL_FEM_TOKAMAK_SRC:.cpp=.o)
+
+PMAXWELL_PRIMAL_TOKAMAK_SRC = pmaxwell-primal-tokamak.cpp $(DPG_COMPLEX_PAR_SRC)
+PMAXWELL_PRIMAL_TOKAMAK_OBJ = $(PMAXWELL_PRIMAL_TOKAMAK_SRC:.cpp=.o)
+
 SEQ_MINIAPPS = diffusion convection-diffusion acoustics maxwell
-PAR_MINIAPPS = pdiffusion pconvection-diffusion pacoustics pmaxwell pmaxwell-tokamak
+PAR_MINIAPPS = pdiffusion pconvection-diffusion pacoustics pmaxwell pmaxwell-tokamak pmaxwell-fem-tokamak pmaxwell-primal-tokamak
 
 ifeq ($(MFEM_USE_MPI),NO)
    MINIAPPS = $(SEQ_MINIAPPS)
@@ -116,6 +122,12 @@ pmaxwell: $(PMAXWELL_OBJ)
 
 pmaxwell-tokamak: $(PMAXWELL_TOKAMAK_OBJ)
 	$(MFEM_CXX) $(MFEM_LINK_FLAGS) -o $@ $(PMAXWELL_TOKAMAK_OBJ) $(COMMON_LIB) $(MFEM_LIBS)
+
+pmaxwell-fem-tokamak: $(PMAXWELL_FEM_TOKAMAK_OBJ)
+	$(MFEM_CXX) $(MFEM_LINK_FLAGS) -o $@ $(PMAXWELL_FEM_TOKAMAK_OBJ) $(COMMON_LIB) $(MFEM_LIBS)	
+
+pmaxwell-primal-tokamak: $(PMAXWELL_PRIMAL_TOKAMAK_OBJ)
+	$(MFEM_CXX) $(MFEM_LINK_FLAGS) -o $@ $(PMAXWELL_PRIMAL_TOKAMAK_OBJ) $(COMMON_LIB) $(MFEM_LIBS)	
 
 # Rule for building lib-common
 lib-common:

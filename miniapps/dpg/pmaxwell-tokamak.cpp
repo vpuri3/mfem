@@ -136,6 +136,8 @@ int main(int argc, char *argv[])
    double epsilon = 1.0;
    double sigma = 0.01*factor;
    double epsilon_scale = 8.8541878128e-12*factor;
+   bool graph_norm = true;
+   bool cpardiso = false;
 
    OptionsParser args(argc, argv);
    args.AddOption(&mesh_file, "-m", "--mesh",
@@ -158,6 +160,10 @@ int main(int argc, char *argv[])
                   "Number of parallel refinements.");
    args.AddOption(&static_cond, "-sc", "--static-condensation", "-no-sc",
                   "--no-static-condensation", "Enable static condensation.");
+   args.AddOption(&graph_norm, "-graph", "--graph-norm", "-no-gn",
+                  "--no-graph-norm", "Enable adjoint graph norm.");
+   args.AddOption(&cpardiso, "-pardiso", "--pardiso", "-no-pardiso",
+                  "--no-pardiso", "Enable/disable pardiso direct solver.");
    args.AddOption(&visualization, "-vis", "--visualization", "-no-vis",
                   "--no-visualization",
                   "Enable or disable GLVis visualization.");
@@ -375,30 +381,32 @@ int main(int argc, char *argv[])
    a->AddTestIntegrator(new CurlCurlIntegrator(one),nullptr,0,0);
    // (F,δF)
    a->AddTestIntegrator(new VectorFEMassIntegrator(one),nullptr,0,0);
-   // μ^2 ω^2 (F,δF)
-   a->AddTestIntegrator(new VectorFEMassIntegrator(mu2omeg2),nullptr,0,0);
-   // -i ω μ (F,∇ × δG) = i (F, -ω μ ∇ × δ G)
-   a->AddTestIntegrator(nullptr,new MixedVectorWeakCurlIntegrator(negmuomeg),0,1);
 
-   // --------------------------------------------------------------------------
-   // // -i ω ϵ (∇ × F, δG) - σ (∇ × F, δG)
-   // a->AddTestIntegrator(new MixedVectorCurlIntegrator(negsigma_cf),
-   // new MixedVectorCurlIntegrator(negepsomeg),0,1);
+   if (graph_norm)
+   {
+      // μ^2 ω^2 (F,δF)
+      a->AddTestIntegrator(new VectorFEMassIntegrator(mu2omeg2),nullptr,0,0);
+      // -i ω μ (F,∇ × δG) = i (F, -ω μ ∇ × δ G)
+      a->AddTestIntegrator(nullptr,new MixedVectorWeakCurlIntegrator(negmuomeg),0,1);
 
-   // a->AddTestIntegrator(new MixedVectorCurlIntegrator(negsigma_cf), nullptr, 0,1);
+      // --------------------------------------------------------------------------
+      // // -i ω ϵ (∇ × F, δG) - σ (∇ × F, δG)
+      // a->AddTestIntegrator(new MixedVectorCurlIntegrator(negsigma_cf),
+      // new MixedVectorCurlIntegrator(negepsomeg),0,1);
 
-   // a->AddTestIntegrator(new MixedVectorCurlIntegrator(mat_eps_r_cf),
-   //                      new MixedVectorCurlIntegrator(mat_eps_i_cf),0,1);
+      // a->AddTestIntegrator(new MixedVectorCurlIntegrator(negsigma_cf), nullptr, 0,1);
 
-   // (M ∇ × F, δG) = (M_r  ∇ × F, δG) + i (M_i  ∇ × F, δG)
-   a->AddTestIntegrator(new MixedVectorCurlIntegrator(Mr_cf),
-                        new MixedVectorCurlIntegrator(Mi_cf),0,1);
-   // --------------------------------------------------------------------------
+      // a->AddTestIntegrator(new MixedVectorCurlIntegrator(mat_eps_r_cf),
+      //                      new MixedVectorCurlIntegrator(mat_eps_i_cf),0,1);
 
+      // (M ∇ × F, δG) = (M_r  ∇ × F, δG) + i (M_i  ∇ × F, δG)
+      a->AddTestIntegrator(new MixedVectorCurlIntegrator(Mr_cf),
+                           new MixedVectorCurlIntegrator(Mi_cf),0,1);
+      // --------------------------------------------------------------------------
 
-   // i ω μ (∇ × G,δF)
-   a->AddTestIntegrator(nullptr,new MixedVectorCurlIntegrator(muomeg),1,0);
-
+      // i ω μ (∇ × G,δF)
+      a->AddTestIntegrator(nullptr,new MixedVectorCurlIntegrator(muomeg),1,0);
+   }
    // --------------------------------------------------------------------------
    // i ω ϵ (G, ∇ × δF ) - σ (G, ∇ × δF )
    // a->AddTestIntegrator(new MixedVectorWeakCurlIntegrator(negsigma_cf),
@@ -418,8 +426,11 @@ int main(int argc, char *argv[])
    TransposeMatrixCoefficient Mrt_cf(Mr_cf);
    TransposeMatrixCoefficient Mit_cf(Mi_cf);
    ScalarMatrixProductCoefficient negMit_cf(-1.0,Mit_cf);
-   a->AddTestIntegrator(new MixedVectorWeakCurlIntegrator(Mrt_cf),
-                        new MixedVectorWeakCurlIntegrator(negMit_cf),1,0);
+   if (graph_norm)
+   {
+      a->AddTestIntegrator(new MixedVectorWeakCurlIntegrator(Mrt_cf),
+                           new MixedVectorWeakCurlIntegrator(negMit_cf),1,0);
+   }
    // --------------------------------------------------------------------------
 
    // --------------------------------------------------------------------------
@@ -438,9 +449,6 @@ int main(int argc, char *argv[])
 
    // a->AddTestIntegrator(new VectorFEMassIntegrator(EEr_cf),
    //                      new VectorFEMassIntegrator(EEi_cf),1,1);
-
-
-
 
    // M*M^*(G,δG) = (MrMr^t + MiMi^t) + i (MiMr^t - MrMi^t)
    MatrixProductCoefficient MrMrt_cf(Mr_cf,Mrt_cf);
@@ -465,7 +473,10 @@ int main(int argc, char *argv[])
    VectorFEMassIntegrator * integ_i = new VectorFEMassIntegrator(MMi_cf);
    integ_i->SetIntegrationRule(ir);
 
-   a->AddTestIntegrator(integ_r,integ_i,1,1);
+   if (graph_norm)
+   {
+      a->AddTestIntegrator(integ_r,integ_i,1,1);
+   }
    // --------------------------------------------------------------------------
 
 
@@ -484,7 +495,7 @@ int main(int argc, char *argv[])
    if (paraview)
    {
       paraview_dc = new ParaViewDataCollection(mesh_file, &pmesh);
-      paraview_dc->SetPrefixPath("ParaView");
+      paraview_dc->SetPrefixPath("ParaViewDPG");
       paraview_dc->SetLevelsOfDetail(order);
       paraview_dc->SetCycle(0);
       paraview_dc->SetDataFormat(VTKFormat::BINARY);
@@ -521,17 +532,17 @@ int main(int argc, char *argv[])
          negone_bdr.SetSize(pmesh.bdr_attributes.Max());
          ess_bdr = 1;
          // need to exclude these attributes
-         // for (int i = 0; i<internal_bdr.Size(); i++)
-         // {
-         //    ess_bdr[internal_bdr[i]-1] = 0;
-         // }
+         for (int i = 0; i<internal_bdr.Size(); i++)
+         {
+            ess_bdr[internal_bdr[i]-1] = 0;
+         }
          hatE_fes->GetEssentialTrueDofs(ess_bdr, ess_tdof_list);
          one_bdr = 0;
          negone_bdr = 0;
-         // one_bdr[234] = 1;
-         // negone_bdr[235] = 1;
-         one_bdr[6] = 1;
-         negone_bdr[7] = 1;
+         one_bdr[234] = 1;
+         negone_bdr[235] = 1;
+         // one_bdr[6] = 1;
+         // negone_bdr[7] = 1;
       }
 
       if (myid == 0)
@@ -545,7 +556,6 @@ int main(int argc, char *argv[])
       {
          ess_tdof_list[j] += E_fes->GetTrueVSize() + H_fes->GetTrueVSize();
       }
-
 
       Array<int> offsets(5);
       offsets[0] = 0;
@@ -565,7 +575,6 @@ int main(int argc, char *argv[])
 
       hatE_gf.ProjectBdrCoefficientTangent(z_one_cf,zero_cf, one_bdr);
       hatE_gf.ProjectBdrCoefficientTangent(z_negone_cf,zero_cf, negone_bdr);
-
 
       if (myid == 0)
       {
@@ -615,58 +624,91 @@ int main(int argc, char *argv[])
       }
 
       X = 0.;
-      BlockDiagonalPreconditioner M(tdof_offsets);
 
-      if (!static_cond)
+      if (cpardiso)
       {
-         HypreBoomerAMG * solver_E = new HypreBoomerAMG((HypreParMatrix &)
-                                                        BlockA_r->GetBlock(0,0));
-         solver_E->SetPrintLevel(0);
-         solver_E->SetSystemsOptions(dim);
-         HypreBoomerAMG * solver_H = new HypreBoomerAMG((HypreParMatrix &)
-                                                        BlockA_r->GetBlock(1,1));
-         solver_H->SetPrintLevel(0);
-         solver_H->SetSystemsOptions(dim);
-         M.SetDiagonalBlock(0,solver_E);
-         M.SetDiagonalBlock(1,solver_H);
-         M.SetDiagonalBlock(num_blocks,solver_E);
-         M.SetDiagonalBlock(num_blocks+1,solver_H);
+         // Monolithic real part
+         Array2D <HypreParMatrix * > Ab_r(num_blocks,num_blocks);
+         // Monolithic imag part
+         Array2D <HypreParMatrix * > Ab_i(num_blocks,num_blocks);
+         for (int i = 0; i<num_blocks; i++)
+         {
+            for (int j = 0; j<num_blocks; j++)
+            {
+               Ab_r(i,j) = &(HypreParMatrix &)BlockA_r->GetBlock(i,j);
+               Ab_i(i,j) = &(HypreParMatrix &)BlockA_i->GetBlock(i,j);
+            }
+         }
+         HypreParMatrix * A_r = HypreParMatrixFromBlocks(Ab_r);
+         HypreParMatrix * A_i = HypreParMatrixFromBlocks(Ab_i);
+
+         ComplexHypreParMatrix Acomplex(A_r, A_i,true,true);
+
+         HypreParMatrix * A = Acomplex.GetSystemMatrix();
+
+         auto cpardiso = new CPardisoSolver(A->GetComm());
+         cpardiso->SetPrintLevel(1);
+         cpardiso->SetOperator(*A);
+
+         cpardiso->Mult(B,X);
+         delete cpardiso;
+
       }
-
-
-      HypreAMS * solver_hatE = new HypreAMS((HypreParMatrix &)BlockA_r->GetBlock(skip,
-                                                                                 skip), hatE_fes);
-      HypreAMS * solver_hatH = new HypreAMS((HypreParMatrix &)BlockA_r->GetBlock(
-                                               skip+1,skip+1), hatH_fes);
-      solver_hatE->SetPrintLevel(0);
-      solver_hatH->SetPrintLevel(0);
-
-      M.SetDiagonalBlock(skip,solver_hatE);
-      M.SetDiagonalBlock(skip+1,solver_hatH);
-      M.SetDiagonalBlock(skip+num_blocks,solver_hatE);
-      M.SetDiagonalBlock(skip+num_blocks+1,solver_hatH);
-
-      if (myid == 0)
+      else
       {
-         std::cout << "PCG iterations" << endl;
+         BlockDiagonalPreconditioner M(tdof_offsets);
+
+         if (!static_cond)
+         {
+            HypreBoomerAMG * solver_E = new HypreBoomerAMG((HypreParMatrix &)
+                                                           BlockA_r->GetBlock(0,0));
+            solver_E->SetPrintLevel(0);
+            solver_E->SetSystemsOptions(dim);
+            HypreBoomerAMG * solver_H = new HypreBoomerAMG((HypreParMatrix &)
+                                                           BlockA_r->GetBlock(1,1));
+            solver_H->SetPrintLevel(0);
+            solver_H->SetSystemsOptions(dim);
+            M.SetDiagonalBlock(0,solver_E);
+            M.SetDiagonalBlock(1,solver_H);
+            M.SetDiagonalBlock(num_blocks,solver_E);
+            M.SetDiagonalBlock(num_blocks+1,solver_H);
+         }
+
+         HypreAMS * solver_hatE = new HypreAMS((HypreParMatrix &)BlockA_r->GetBlock(skip,
+                                                                                    skip), hatE_fes);
+         HypreAMS * solver_hatH = new HypreAMS((HypreParMatrix &)BlockA_r->GetBlock(
+                                                  skip+1,skip+1), hatH_fes);
+         solver_hatE->SetPrintLevel(0);
+         solver_hatH->SetPrintLevel(0);
+
+         M.SetDiagonalBlock(skip,solver_hatE);
+         M.SetDiagonalBlock(skip+1,solver_hatH);
+         M.SetDiagonalBlock(skip+num_blocks,solver_hatE);
+         M.SetDiagonalBlock(skip+num_blocks+1,solver_hatH);
+
+         if (myid == 0)
+         {
+            std::cout << "PCG iterations" << endl;
+         }
+
+
+         CGSolver cg(MPI_COMM_WORLD);
+         // GMRESSolver cg(MPI_COMM_WORLD);
+         cg.SetRelTol(1e-8);
+         cg.SetMaxIter(1000);
+         cg.SetPrintLevel(1);
+         cg.SetPreconditioner(M);
+         cg.SetOperator(blockA);
+         cg.Mult(B, X);
+
+         for (int i = 0; i<num_blocks; i++)
+         {
+            delete &M.GetDiagonalBlock(i);
+         }
+
+         int num_iter = cg.GetNumIterations();
+
       }
-
-
-      CGSolver cg(MPI_COMM_WORLD);
-      cg.SetRelTol(1e-6);
-      cg.SetMaxIter(500);
-      cg.SetPrintLevel(1);
-      cg.SetPreconditioner(M);
-      cg.SetOperator(blockA);
-      cg.Mult(B, X);
-
-      for (int i = 0; i<num_blocks; i++)
-      {
-         delete &M.GetDiagonalBlock(i);
-      }
-
-      int num_iter = cg.GetNumIterations();
-
       a->RecoverFEMSolution(X,x);
 
       E.real().MakeRef(E_fes,x.GetData());
