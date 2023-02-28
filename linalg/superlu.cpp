@@ -254,7 +254,8 @@ SuperLUSolver::SuperLUSolver(MPI_Comm comm, int npdep)
      nprow(GetSquareComponent(npdep / NumProc(comm))),
      npcol(npdep / nprow)
 {
-   MFEM_VERIFY(nprow * npcol == npdep / NumProc(comm), "Impossible processor partition!");
+   MFEM_VERIFY(nprow * npcol == npdep / NumProc(comm),
+               "Impossible processor partition!");
 
    Init(comm);
 }
@@ -266,7 +267,8 @@ SuperLUSolver::SuperLUSolver(SuperLURowLocMatrix &A, int npdep)
      nprow(GetSquareComponent(npdep / NumProc(A.GetComm()))),
      npcol(npdep / nprow)
 {
-   MFEM_VERIFY(nprow * npcol == npdep / NumProc(A.GetComm()), "Impossible processor partition!");
+   MFEM_VERIFY(nprow * npcol == npdep / NumProc(A.GetComm()),
+               "Impossible processor partition!");
    Init(A.GetComm());
    SetOperator(A);
 }
