@@ -109,8 +109,7 @@ public:
    // Factor and solve the linear system y = Op^{-T} x.
    // Note: Factorization modifies the operator matrix.
    void MultTranspose(const Vector &x, Vector &y) const;
-   void ArrayMultTranspose(const Array<const Vector *> &X,
-                           Array<Vector *> &Y) const;
+   void ArrayMultTranspose(const Array<const Vector *> &X, Array<Vector *> &Y) const;
 
    // Set various solver options. Refer to SuperLU_DIST documentation for
    // details.
@@ -126,6 +125,9 @@ public:
    void SetParSymbFact(bool par);
    void SetFact(superlu::Fact fact);
 
+   const int nprow;
+   const int npcol;
+   const int npdep;
 private:
    // Initialize the solver.
    void Init(MPI_Comm comm);
@@ -143,9 +145,6 @@ protected:
    mutable Vector sol_;
    mutable int    nrhs_;
 
-   int nprow_;
-   int npcol_;
-   int npdep_;
 
    /** The actual types of the following pointers are hidden to avoid exposing
        the SuperLU header files to the entire library. Their types are given in

@@ -74,15 +74,14 @@ unsigned int sqrti(unsigned int a)
    return (root >> 1);
 }
 
-void GetSquare(int np, int &nr, int &nc)
+int GetSquareComponent(int np)
 {
-   nr = (int)sqrti((unsigned int)np);
+   int nr = (int)sqrti((unsigned int)np);
    while (np % nr != 0 && nr > 0)
    {
       nr--;
    }
-   nc = (int)(np / nr);
-   MFEM_VERIFY(nr * nc == np, "Impossible processor partition!");
+   return nr;
 }
 
 namespace mfem
@@ -241,19 +240,33 @@ SuperLURowLocMatrix::~SuperLURowLocMatrix()
    delete A;
 }
 
+int NumProc(MPI_Comm comm)
+{
+   int nprocs;
+   MPI_Comm_size(comm, &nprocs);
+   return nprocs;
+}
+
 SuperLUSolver::SuperLUSolver(MPI_Comm comm, int npdep)
    : APtr_(NULL),
      nrhs_(0),
-     npdep_(npdep)
+     npdep(npdep),
+     nprow(GetSquareComponent(npdep / NumProc(comm))),
+     npcol(npdep / nprow)
 {
+   MFEM_VERIFY(nprow * npcol == npdep / NumProc(comm), "Impossible processor partition!");
+
    Init(comm);
 }
 
 SuperLUSolver::SuperLUSolver(SuperLURowLocMatrix &A, int npdep)
    : APtr_(&A),
      nrhs_(0),
-     npdep_(npdep)
+     npdep(npdep),
+     nprow(GetSquareComponent(npdep / NumProc(A.GetComm()))),
+     npcol(npdep / nprow)
 {
+   MFEM_VERIFY(nprow * npcol == npdep / NumProc(A.GetComm()), "Impossible processor partition!");
    Init(A.GetComm());
    SetOperator(A);
 }
@@ -268,7 +281,7 @@ SuperLUSolver::~SuperLUSolver()
 
 #if SUPERLU_DIST_MAJOR_VERSION > 7 || \
    (SUPERLU_DIST_MAJOR_VERSION == 7 && SUPERLU_DIST_MINOR_VERSION >= 2)
-   if (npdep_ > 1)
+   if (npdep > 1)
    {
       gridinfo3d_t *grid3d = (gridinfo3d_t *)gridPtr_;
 
@@ -326,7 +339,7 @@ void SuperLUSolver::Init(MPI_Comm comm)
    SOLVEstructPtr_     = new SOLVEstruct_t;
 #if SUPERLU_DIST_MAJOR_VERSION > 7 || \
    (SUPERLU_DIST_MAJOR_VERSION == 7 && SUPERLU_DIST_MINOR_VERSION >= 2)
-   if (npdep_ > 1)
+   if (npdep > 1)
    {
       gridPtr_         = new gridinfo3d_t;
    }
@@ -354,7 +367,7 @@ void SuperLUSolver::Init(MPI_Comm comm)
    set_default_options_dist(options);
 #if SUPERLU_DIST_MAJOR_VERSION > 7 || \
    (SUPERLU_DIST_MAJOR_VERSION == 7 && SUPERLU_DIST_MINOR_VERSION >= 2)
-   if (npdep_ > 1)
+   if (npdep > 1)
    {
       options->Algo3d = YES;
    }
@@ -368,32 +381,30 @@ void SuperLUSolver::SetupGrid(MPI_Comm comm)
 
 #if SUPERLU_DIST_MAJOR_VERSION > 7 || \
    (SUPERLU_DIST_MAJOR_VERSION == 7 && SUPERLU_DIST_MINOR_VERSION >= 2)
-   if (npdep_ > 1)
+   if (npdep > 1)
    {
       gridinfo3d_t *grid3d = (gridinfo3d_t *)gridPtr_;
 
-      int mask = npdep_ - 1;
-      MFEM_VERIFY(!(npdep_ & mask),
+      int mask = npdep - 1;
+      MFEM_VERIFY(!(npdep & mask),
                   "SuperLUSolver::SetupGrid: 3D partition depth must be a power "
                   "of two!");
-      MFEM_VERIFY(nprocs % npdep_ == 0,
+      MFEM_VERIFY(nprocs % npdep == 0,
                   "SuperLUSolver::SetupGrid: Number of processors must be "
                   "evenly divisible by 3D partition depth!");
-      GetSquare(nprocs / npdep_, nprow_, npcol_);
 
-      superlu_gridinit3d(comm, nprow_, npcol_, npdep_, grid3d);
+      superlu_gridinit3d(comm, nprow, npcol, npdep, grid3d);
    }
    else
 #endif
    {
       gridinfo_t *grid = (gridinfo_t *)gridPtr_;
 
-      MFEM_VERIFY(npdep_ == 1,
+      MFEM_VERIFY(npdep == 1,
                   "SuperLUSolver::SetupGrid: 3D partitioning is only available for "
                   "version >= 7.2.0!");
-      GetSquare(nprocs, nprow_, npcol_);
 
-      superlu_gridinit(comm, nprow_, npcol_, grid);
+      superlu_gridinit(comm, nprow, npcol, grid);
    }
 }
 
@@ -503,7 +514,7 @@ void SuperLUSolver::SetOperator(const Operator &op)
 #if SUPERLU_DIST_MAJOR_VERSION > 7 || \
    (SUPERLU_DIST_MAJOR_VERSION == 7 && SUPERLU_DIST_MINOR_VERSION >= 2)
    gridinfo3d_t      *grid3d = NULL;
-   if (npdep_ > 1)
+   if (npdep > 1)
    {
       grid3d = (gridinfo3d_t *)gridPtr_;
       grid = NULL;
@@ -543,7 +554,7 @@ void SuperLUSolver::SetOperator(const Operator &op)
             // Just zero the LU factors
 #if SUPERLU_DIST_MAJOR_VERSION > 7 || \
 (SUPERLU_DIST_MAJOR_VERSION == 7 && SUPERLU_DIST_MINOR_VERSION >= 2)
-            if (npdep_ > 1)
+            if (npdep > 1)
             {
                if (grid3d->zscp.Iam == 0)
                {
@@ -569,7 +580,7 @@ void SuperLUSolver::SetOperator(const Operator &op)
             // Delete factors from the prior factorization
 #if SUPERLU_DIST_MAJOR_VERSION > 7 || \
 (SUPERLU_DIST_MAJOR_VERSION == 7 && SUPERLU_DIST_MINOR_VERSION >= 2)
-            if (npdep_ > 1)
+            if (npdep > 1)
             {
                if (grid3d->zscp.Iam == 0)
                {
@@ -625,7 +636,7 @@ void SuperLUSolver::ArrayMult(const Array<const Vector *> &X,
 #if SUPERLU_DIST_MAJOR_VERSION > 7 || \
    (SUPERLU_DIST_MAJOR_VERSION == 7 && SUPERLU_DIST_MINOR_VERSION >= 2)
    gridinfo3d_t      *grid3d = NULL;
-   if (npdep_ > 1)
+   if (npdep > 1)
    {
       grid3d = (gridinfo3d_t *)gridPtr_;
       grid = NULL;
@@ -678,7 +689,7 @@ void SuperLUSolver::ArrayMult(const Array<const Vector *> &X,
    int info = -1;
 #if SUPERLU_DIST_MAJOR_VERSION > 7 || \
    (SUPERLU_DIST_MAJOR_VERSION == 7 && SUPERLU_DIST_MINOR_VERSION >= 2)
-   if (npdep_ > 1)
+   if (npdep > 1)
    {
       pdgssvx3d(options, A, ScalePermstruct, B, ldx, nrhs_,
                 grid3d, LUstruct, SOLVEstruct, berr, &stat, &info);
