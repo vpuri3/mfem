@@ -126,9 +126,9 @@ public:
    void SetParSymbFact(bool par);
    void SetFact(superlu::Fact fact);
 
-   const int nprow;
-   const int npcol;
-   const int npdep;
+   const int nprow_;
+   const int npcol_;
+   const int npdep_;
 private:
    // Initialize the solver.
    void Init(MPI_Comm comm);
