@@ -21,29 +21,41 @@ namespace mfem
 
 void VectorMassIntegrator::AssembleMF(const FiniteElementSpace &fes)
 {
-   // Assuming the same element type
    Mesh *mesh = fes.GetMesh();
    if (mesh->GetNE() == 0) { return; }
-   const FiniteElement &el = *fes.GetFE(0);
-   ElementTransformation *T = mesh->GetElementTransformation(0);
-   const IntegrationRule *ir
-      = IntRule ? IntRule : &MassIntegrator::GetRule(el, el, *T);
    if (DeviceCanUseCeed())
    {
       delete ceedOp;
-      const bool mixed = mesh->GetNumGeometries(mesh->Dimension()) > 1 ||
-                         fes.IsVariableOrder();
-      if (mixed)
-      {
-         ceedOp = new ceed::MixedMFMassIntegrator(*this, fes, Q);
-      }
-      else
-      {
-         ceedOp = new ceed::MFMassIntegrator(fes, *ir, Q);
-      }
+      ceedOp = new ceed::MFMassIntegrator(*this, fes, Q);
       return;
    }
+
+   // Assuming the same element type
+   // const FiniteElement &el = *fes.GetFE(0);
+   // ElementTransformation *T = mesh->GetElementTransformation(0);
+   // const IntegrationRule *ir
+   //    = IntRule ? IntRule : &MassIntegrator::GetRule(el, el, *T);
    MFEM_ABORT("Error: VectorMassIntegrator::AssembleMF only implemented with"
+              " libCEED");
+}
+
+void VectorMassIntegrator::AssembleMFBoundary(const FiniteElementSpace &fes)
+{
+   Mesh *mesh = fes.GetMesh();
+   if (mesh->GetNBE() == 0) { return; }
+   if (DeviceCanUseCeed())
+   {
+      delete ceedOp;
+      ceedOp = new ceed::MFMassIntegrator(*this, fes, Q, true);
+      return;
+   }
+
+   // Assuming the same element type
+   // const FiniteElement &el = *fes.GetBE(0);
+   // ElementTransformation *T = mesh->GetBdrElementTransformation(0);
+   // const IntegrationRule *ir
+   //    = IntRule ? IntRule : &MassIntegrator::GetRule(el, el, *T);
+   MFEM_ABORT("Error: VectorMassIntegrator::AssembleMFBoundary only implemented with"
               " libCEED");
 }
 

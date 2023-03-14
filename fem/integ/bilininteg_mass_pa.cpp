@@ -25,28 +25,19 @@ void MassIntegrator::AssemblePA(const FiniteElementSpace &fes)
 {
    const MemoryType mt = (pa_mt == MemoryType::DEFAULT) ?
                          Device::GetDeviceMemoryType() : pa_mt;
-
-   // Assuming the same element type
    Mesh *mesh = fes.GetMesh();
    if (mesh->GetNE() == 0) { return; }
-   const FiniteElement &el = *fes.GetFE(0);
-   ElementTransformation *T0 = mesh->GetElementTransformation(0);
-   const IntegrationRule *ir = IntRule ? IntRule : &GetRule(el, el, *T0);
    if (DeviceCanUseCeed())
    {
       delete ceedOp;
-      const bool mixed = mesh->GetNumGeometries(mesh->Dimension()) > 1 ||
-                         fes.IsVariableOrder();
-      if (mixed)
-      {
-         ceedOp = new ceed::MixedPAMassIntegrator(*this, fes, Q);
-      }
-      else
-      {
-         ceedOp = new ceed::PAMassIntegrator(fes, *ir, Q);
-      }
+      ceedOp = new ceed::PAMassIntegrator(*this, fes, Q);
       return;
    }
+
+   // Assuming the same element type
+   const FiniteElement &el = *fes.GetFE(0);
+   ElementTransformation *T0 = mesh->GetElementTransformation(0);
+   const IntegrationRule *ir = IntRule ? IntRule : &GetRule(el, el, *T0);
    int map_type = el.GetMapType();
    dim = mesh->Dimension();
    ne = fes.GetMesh()->GetNE();
@@ -118,14 +109,19 @@ void MassIntegrator::AssemblePABoundary(const FiniteElementSpace &fes)
 {
    const MemoryType mt = (pa_mt == MemoryType::DEFAULT) ?
                          Device::GetDeviceMemoryType() : pa_mt;
-
-   // Assuming the same element type
    Mesh *mesh = fes.GetMesh();
    if (mesh->GetNBE() == 0) { return; }
+   if (DeviceCanUseCeed())
+   {
+      delete ceedOp;
+      ceedOp = new ceed::PAMassIntegrator(*this, fes, Q, true);
+      return;
+   }
+
+   // Assuming the same element type
    const FiniteElement &el = *fes.GetBE(0);
    ElementTransformation *T0 = mesh->GetBdrElementTransformation(0);
    const IntegrationRule *ir = IntRule ? IntRule : &GetRule(el, el, *T0);
-
    int map_type = el.GetMapType();
    dim = el.GetDim(); // Dimension of the boundary element, *not* the mesh
    ne = fes.GetMesh()->GetNBE();

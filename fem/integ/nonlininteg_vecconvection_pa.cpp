@@ -23,24 +23,18 @@ void VectorConvectionNLFIntegrator::AssemblePA(const FiniteElementSpace &fes)
    MFEM_ASSERT(fes.GetOrdering() == Ordering::byNODES,
                "PA Only supports Ordering::byNODES!");
    Mesh *mesh = fes.GetMesh();
-   const FiniteElement &el = *fes.GetFE(0);
-   ElementTransformation &T = *mesh->GetElementTransformation(0);
-   const IntegrationRule *ir = IntRule ? IntRule : &GetRule(el, T);
+   if (mesh->GetNE() == 0) { return; }
    if (DeviceCanUseCeed())
    {
       delete ceedOp;
-      const bool mixed = mesh->GetNumGeometries(mesh->Dimension()) > 1 ||
-                         fes.IsVariableOrder();
-      if (mixed)
-      {
-         ceedOp = new ceed::MixedPAVectorConvectionNLIntegrator(*this, fes, Q);
-      }
-      else
-      {
-         ceedOp = new ceed::PAVectorConvectionNLFIntegrator(fes, *ir, Q);
-      }
+      ceedOp = new ceed::PAVectorConvectionNLIntegrator(*this, fes, Q);
       return;
    }
+
+   // Assumes tensor-product elements
+   const FiniteElement &el = *fes.GetFE(0);
+   ElementTransformation &T = *mesh->GetElementTransformation(0);
+   const IntegrationRule *ir = IntRule ? IntRule : &GetRule(el, T);
    dim = mesh->Dimension();
    ne = fes.GetMesh()->GetNE();
    nq = ir->GetNPoints();
@@ -122,6 +116,28 @@ void VectorConvectionNLFIntegrator::AssemblePA(const FiniteElementSpace &fes)
          }
       });
    }
+}
+
+void VectorConvectionNLFIntegrator::AssemblePABoundary(const FiniteElementSpace
+                                                       &fes)
+{
+   MFEM_ASSERT(fes.GetOrdering() == Ordering::byNODES,
+               "MF only supports Ordering::byNODES!");
+   Mesh *mesh = fes.GetMesh();
+   if (mesh->GetNBE() == 0) { return; }
+   if (DeviceCanUseCeed())
+   {
+      delete ceedOp;
+      ceedOp = new ceed::PAVectorConvectionNLIntegrator(*this, fes, Q, true);
+      return;
+   }
+
+   // Assuming the same element type
+   // const FiniteElement &el = *fes.GetBE(0);
+   // ElementTransformation &T = *mesh->GetBdrElementTransformation(0);
+   // const IntegrationRule *ir = IntRule ? IntRule : &GetRule(el, T);
+   MFEM_ABORT("Error: VectorConvectionNLFIntegrator::AssemblePABoundary only"
+              " implemented with libCEED");
 }
 
 // PA Convection NL 2D kernel
