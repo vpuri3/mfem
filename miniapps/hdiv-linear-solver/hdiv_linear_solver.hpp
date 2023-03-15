@@ -54,7 +54,9 @@ private:
    // Change of basis operators
    ChangeOfBasis_L2 basis_l2;
    ChangeOfBasis_RT basis_rt;
-   ChangeMapType_L2 map_type_l2;
+
+   /// Whether conversion from map type VALUE to INTEGRAL is required.
+   const bool convert_map_type;
 
    ParBilinearForm mass_l2, mass_rt;
 
@@ -80,13 +82,13 @@ private:
    /// The block-diagonal preconditioner.
    std::unique_ptr<BlockDiagonalPreconditioner> D_prec;
 
-   Coefficient &L_coeff, &R_coeff;
+   Coefficient &L_coeff, &R_coeff, &B_coeff;
 
    const Mode mode;
    bool zero_l2_block = false;
    QuadratureSpace qs;
-   QuadratureFunction qf;
-   QuadratureFunctionCoefficient l2_qf_coeff;
+   QuadratureFunction W_coeff_qf, W_mix_coeff_qf;
+   QuadratureFunctionCoefficient W_coeff, W_mix_coeff;
 
    ConstantCoefficient zero = ConstantCoefficient(0.0);
 
@@ -130,6 +132,16 @@ public:
    /// HdivSaddlePointSolver(ParMesh&, ParFiniteElementSpace&,
    /// ParFiniteElementSpace&, Coefficient&, const Array<int>&) the zero-block
    /// HdivSaddlePointSolver constructor@endlink).
+   HdivSaddlePointSolver(ParMesh &mesh_,
+                         ParFiniteElementSpace &fes_rt_,
+                         ParFiniteElementSpace &fes_l2_,
+                         Coefficient &L_coeff_,
+                         Coefficient &R_coeff_,
+                         Coefficient &B_coeff_,
+                         const Array<int> &ess_rt_dofs_,
+                         Mode mode_);
+
+   /// Same as the main constructor, but with B_coeff set to zero.
    HdivSaddlePointSolver(ParMesh &mesh_,
                          ParFiniteElementSpace &fes_rt_,
                          ParFiniteElementSpace &fes_l2_,

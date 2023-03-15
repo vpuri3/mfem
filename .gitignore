@@ -214,6 +214,8 @@ miniapps/meshing/toroid-*.mesh
 miniapps/meshing/twist-*.mesh
 miniapps/meshing/mesh-explorer.mesh
 miniapps/meshing/partitioning.txt
+miniapps/meshing/mesh-explorer-visit*
+miniapps/meshing/mesh-explorer-paraview/
 miniapps/meshing/shaper.mesh
 miniapps/meshing/extruder.mesh
 miniapps/meshing/trimmer.mesh
@@ -304,6 +306,10 @@ miniapps/solvers/plor_solvers
 miniapps/solvers/ParaView
 miniapps/solvers/mesh.*
 miniapps/solvers/sol.*
+
+miniapps/hdiv-linear-solver/darcy
+miniapps/hdiv-linear-solver/grad_div
+miniapps/hdiv-linear-solver/residual
 
 miniapps/parelag/MultilevelHcurlHdivSolver
 miniapps/parelag/*.mesh
