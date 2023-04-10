@@ -41,108 +41,117 @@ void BilinearFormIntegrator::AssemblePABoundary(const FiniteElementSpace&)
 
 void BilinearFormIntegrator::AssemblePAInteriorFaces(const FiniteElementSpace&)
 {
-   MFEM_ABORT("BilinearFormIntegrator::AssemblePAInteriorFaces(...)\n"
+   MFEM_ABORT("BilinearFormIntegrator::AssemblePAInteriorFaces(fes)\n"
               "   is not implemented for this class.");
 }
 
 void BilinearFormIntegrator::AssemblePABoundaryFaces(const FiniteElementSpace&)
 {
-   MFEM_ABORT("BilinearFormIntegrator::AssemblePABoundaryFaces(...)\n"
+   MFEM_ABORT("BilinearFormIntegrator::AssemblePABoundaryFaces(fes)\n"
               "   is not implemented for this class.");
 }
 
-void BilinearFormIntegrator::AssembleDiagonalPA(Vector &)
+void BilinearFormIntegrator::AssembleDiagonalPA(Vector&)
 {
    MFEM_ABORT("BilinearFormIntegrator::AssembleDiagonalPA(...)\n"
               "   is not implemented for this class.");
 }
 
-void BilinearFormIntegrator::AssembleEA(const FiniteElementSpace &fes,
-                                        Vector &emat,
-                                        const bool add)
-{
-   MFEM_ABORT("BilinearFormIntegrator::AssembleEA(...)\n"
-              "   is not implemented for this class.");
-}
-
-void BilinearFormIntegrator::AssembleEAInteriorFaces(const FiniteElementSpace
-                                                     &fes,
-                                                     Vector &ea_data_int,
-                                                     Vector &ea_data_ext,
-                                                     const bool add)
-{
-   MFEM_ABORT("BilinearFormIntegrator::AssembleEAInteriorFaces(...)\n"
-              "   is not implemented for this class.");
-}
-
-void BilinearFormIntegrator::AssembleEABoundaryFaces(const FiniteElementSpace
-                                                     &fes,
-                                                     Vector &ea_data_bdr,
-                                                     const bool add)
-{
-   MFEM_ABORT("BilinearFormIntegrator::AssembleEABoundaryFaces(...)\n"
-              "   is not implemented for this class.");
-}
-
-void BilinearFormIntegrator::AssembleDiagonalPA_ADAt(const Vector &, Vector &)
+void BilinearFormIntegrator::AssembleDiagonalPA_ADAt(const Vector&, Vector&)
 {
    MFEM_ABORT("BilinearFormIntegrator::AssembleDiagonalPA_ADAt(...)\n"
               "   is not implemented for this class.");
 }
 
-void BilinearFormIntegrator::AddMultPA(const Vector &, Vector &) const
+void BilinearFormIntegrator::AddMultPA(const Vector&, Vector&) const
 {
    MFEM_ABORT("BilinearFormIntegrator::MultAssembled(...)\n"
               "   is not implemented for this class.");
 }
 
-void BilinearFormIntegrator::AddMultTransposePA(const Vector &, Vector &) const
+void BilinearFormIntegrator::AddMultTransposePA(const Vector&, Vector&) const
 {
    MFEM_ABORT("BilinearFormIntegrator::AddMultTransposePA(...)\n"
               "   is not implemented for this class.");
 }
 
-void BilinearFormIntegrator::AssembleMF(const FiniteElementSpace &fes)
+void BilinearFormIntegrator::AssembleEA(const FiniteElementSpace&,
+                                        Vector&)
+{
+   MFEM_ABORT("BilinearFormIntegrator::AssembleEA(...)\n"
+              "   is not implemented for this class.");
+}
+
+void BilinearFormIntegrator::AssembleEA(const FiniteElementSpace&,
+                                        const FiniteElementSpace&,
+                                        Vector&)
+{
+   MFEM_ABORT("BilinearFormIntegrator::AssembleEA(...)\n"
+              "   is not implemented for this class.");
+}
+
+void BilinearFormIntegrator::AssembleEAInteriorFaces(const FiniteElementSpace &,
+                                                     Vector&,
+                                                     Vector&)
+{
+   MFEM_ABORT("BilinearFormIntegrator::AssembleEAInteriorFaces(...)\n"
+              "   is not implemented for this class.");
+}
+
+void BilinearFormIntegrator::AssembleEABoundaryFaces(const FiniteElementSpace&,
+                                                     Vector&)
+{
+   MFEM_ABORT("BilinearFormIntegrator::AssembleEABoundaryFaces(...)\n"
+              "   is not implemented for this class.");
+}
+
+void BilinearFormIntegrator::AssembleMF(const FiniteElementSpace&)
 {
    MFEM_ABORT("BilinearFormIntegrator::AssembleMF(...)\n"
               "   is not implemented for this class.");
 }
 
-void BilinearFormIntegrator::AddMultMF(const Vector &, Vector &) const
+void BilinearFormIntegrator::AssembleMFBoundary(const FiniteElementSpace&)
 {
-   MFEM_ABORT("BilinearFormIntegrator::AddMultMF(...)\n"
+   MFEM_ABORT("BilinearFormIntegrator::AssembleMFBoundary(fes)\n"
               "   is not implemented for this class.");
 }
 
-void BilinearFormIntegrator::AddMultTransposeMF(const Vector &, Vector &) const
-{
-   MFEM_ABORT("BilinearFormIntegrator::AddMultTransposeMF(...)\n"
-              "   is not implemented for this class.");
-}
-
-void BilinearFormIntegrator::AssembleDiagonalMF(Vector &)
+void BilinearFormIntegrator::AssembleDiagonalMF(Vector&)
 {
    MFEM_ABORT("BilinearFormIntegrator::AssembleDiagonalMF(...)\n"
               "   is not implemented for this class.");
 }
 
-void BilinearFormIntegrator::AssembleElementMatrix (
+void BilinearFormIntegrator::AddMultMF(const Vector&, Vector&) const
+{
+   MFEM_ABORT("BilinearFormIntegrator::AddMultMF(...)\n"
+              "   is not implemented for this class.");
+}
+
+void BilinearFormIntegrator::AddMultTransposeMF(const Vector&, Vector&) const
+{
+   MFEM_ABORT("BilinearFormIntegrator::AddMultTransposeMF(...)\n"
+              "   is not implemented for this class.");
+}
+
+void BilinearFormIntegrator::AssembleElementMatrix(
    const FiniteElement &el, ElementTransformation &Trans,
-   DenseMatrix &elmat )
+   DenseMatrix &elmat)
 {
    MFEM_ABORT("BilinearFormIntegrator::AssembleElementMatrix(...)\n"
               "   is not implemented for this class.");
 }
 
-void BilinearFormIntegrator::AssembleElementMatrix2 (
+void BilinearFormIntegrator::AssembleElementMatrix2(
    const FiniteElement &el1, const FiniteElement &el2,
-   ElementTransformation &Trans, DenseMatrix &elmat )
+   ElementTransformation &Trans, DenseMatrix &elmat)
 {
    MFEM_ABORT("BilinearFormIntegrator::AssembleElementMatrix2(...)\n"
               "   is not implemented for this class.");
 }
 
-void BilinearFormIntegrator::AssembleFaceMatrix (
+void BilinearFormIntegrator::AssembleFaceMatrix(
    const FiniteElement &el1, const FiniteElement &el2,
    FaceElementTransformations &Trans, DenseMatrix &elmat)
 {
@@ -187,30 +196,30 @@ void TransposeIntegrator::SetIntRule(const IntegrationRule *ir)
    bfi->SetIntRule(ir);
 }
 
-void TransposeIntegrator::AssembleElementMatrix (
+void TransposeIntegrator::AssembleElementMatrix(
    const FiniteElement &el, ElementTransformation &Trans, DenseMatrix &elmat)
 {
-   bfi -> AssembleElementMatrix (el, Trans, bfi_elmat);
+   bfi->AssembleElementMatrix(el, Trans, bfi_elmat);
    // elmat = bfi_elmat^t
-   elmat.Transpose (bfi_elmat);
+   elmat.Transpose(bfi_elmat);
 }
 
-void TransposeIntegrator::AssembleElementMatrix2 (
+void TransposeIntegrator::AssembleElementMatrix2(
    const FiniteElement &trial_fe, const FiniteElement &test_fe,
    ElementTransformation &Trans, DenseMatrix &elmat)
 {
-   bfi -> AssembleElementMatrix2 (test_fe, trial_fe, Trans, bfi_elmat);
+   bfi->AssembleElementMatrix2(test_fe, trial_fe, Trans, bfi_elmat);
    // elmat = bfi_elmat^t
-   elmat.Transpose (bfi_elmat);
+   elmat.Transpose(bfi_elmat);
 }
 
-void TransposeIntegrator::AssembleFaceMatrix (
+void TransposeIntegrator::AssembleFaceMatrix(
    const FiniteElement &el1, const FiniteElement &el2,
    FaceElementTransformations &Trans, DenseMatrix &elmat)
 {
-   bfi -> AssembleFaceMatrix (el1, el2, Trans, bfi_elmat);
+   bfi->AssembleFaceMatrix(el1, el2, Trans, bfi_elmat);
    // elmat = bfi_elmat^t
-   elmat.Transpose (bfi_elmat);
+   elmat.Transpose(bfi_elmat);
 }
 
 void LumpedIntegrator::SetIntRule(const IntegrationRule *ir)
@@ -219,10 +228,10 @@ void LumpedIntegrator::SetIntRule(const IntegrationRule *ir)
    bfi->SetIntRule(ir);
 }
 
-void LumpedIntegrator::AssembleElementMatrix (
+void LumpedIntegrator::AssembleElementMatrix(
    const FiniteElement &el, ElementTransformation &Trans, DenseMatrix &elmat)
 {
-   bfi -> AssembleElementMatrix (el, Trans, elmat);
+   bfi->AssembleElementMatrix(el, Trans, elmat);
    elmat.Lump();
 }
 
@@ -352,11 +361,46 @@ void SumIntegrator::AddMultTransposePA(const Vector &x, Vector &y) const
    }
 }
 
+void SumIntegrator::AssembleEA(const FiniteElementSpace &fes, Vector &emat)
+{
+   for (int i = 0; i < integrators.Size(); i++)
+   {
+      integrators[i]->AssembleEA(fes, emat);
+   }
+}
+
+void SumIntegrator::AssembleEAInteriorFaces(const FiniteElementSpace &fes,
+                                            Vector &ea_data_int,
+                                            Vector &ea_data_ext)
+{
+   for (int i = 0; i < integrators.Size(); i++)
+   {
+      integrators[i]->AssembleEAInteriorFaces(fes, ea_data_int, ea_data_ext);
+   }
+}
+
+void SumIntegrator::AssembleEABoundaryFaces(const FiniteElementSpace &fes,
+                                            Vector &ea_data_bdr)
+{
+   for (int i = 0; i < integrators.Size(); i++)
+   {
+      integrators[i]->AssembleEABoundaryFaces(fes, ea_data_bdr);
+   }
+}
+
 void SumIntegrator::AssembleMF(const FiniteElementSpace &fes)
 {
    for (int i = 0; i < integrators.Size(); i++)
    {
       integrators[i]->AssembleMF(fes);
+   }
+}
+
+void SumIntegrator::AssembleDiagonalMF(Vector &diag)
+{
+   for (int i = 0; i < integrators.Size(); i++)
+   {
+      integrators[i]->AssembleDiagonalMF(diag);
    }
 }
 
@@ -373,44 +417,6 @@ void SumIntegrator::AddMultTransposeMF(const Vector &x, Vector &y) const
    for (int i = 0; i < integrators.Size(); i++)
    {
       integrators[i]->AddMultMF(x, y);
-   }
-}
-
-void SumIntegrator::AssembleDiagonalMF(Vector &diag)
-{
-   for (int i = 0; i < integrators.Size(); i++)
-   {
-      integrators[i]->AssembleDiagonalMF(diag);
-   }
-}
-
-void SumIntegrator::AssembleEA(const FiniteElementSpace &fes, Vector &emat,
-                               const bool add)
-{
-   for (int i = 0; i < integrators.Size(); i++)
-   {
-      integrators[i]->AssembleEA(fes, emat, add);
-   }
-}
-
-void SumIntegrator::AssembleEAInteriorFaces(const FiniteElementSpace &fes,
-                                            Vector &ea_data_int,
-                                            Vector &ea_data_ext,
-                                            const bool add)
-{
-   for (int i = 0; i < integrators.Size(); i++)
-   {
-      integrators[i]->AssembleEAInteriorFaces(fes,ea_data_int,ea_data_ext,add);
-   }
-}
-
-void SumIntegrator::AssembleEABoundaryFaces(const FiniteElementSpace &fes,
-                                            Vector &ea_data_bdr,
-                                            const bool add)
-{
-   for (int i = 0; i < integrators.Size(); i++)
-   {
-      integrators[i]->AssembleEABoundaryFaces(fes, ea_data_bdr, add);
    }
 }
 
@@ -638,15 +644,15 @@ void MixedVectorIntegrator::AssembleElementMatrix2(
       {
          if (Q)
          {
-            w *= Q -> Eval (Trans, ip);
+            w *= Q->Eval(Trans, ip);
          }
          if (same_shapes)
          {
-            AddMult_a_AAt (w, test_shape, elmat);
+            AddMult_a_AAt(w, test_shape, elmat);
          }
          else
          {
-            AddMult_a_ABt (w, test_shape, trial_shape, elmat);
+            AddMult_a_ABt(w, test_shape, trial_shape, elmat);
          }
       }
    }
@@ -732,7 +738,6 @@ void MixedScalarVectorIntegrator::AssembleElementMatrix2(
    }
 }
 
-
 void GradientIntegrator::AssembleElementMatrix2(
    const FiniteElement &trial_fe, const FiniteElement &test_fe,
    ElementTransformation &Trans,  DenseMatrix &elmat)
@@ -797,7 +802,6 @@ const IntegrationRule &GradientIntegrator::GetRule(const FiniteElement
    int order = Trans.OrderGrad(&trial_fe) + test_fe.GetOrder() + Trans.OrderJ();
    return IntRules.Get(trial_fe.GetGeomType(), order);
 }
-
 
 void DiffusionIntegrator::AssembleElementMatrix
 ( const FiniteElement &el, ElementTransformation &Trans,
@@ -1091,7 +1095,7 @@ void DiffusionIntegrator::ComputeElementFlux
       el.CalcDShape(ip, dshape);
       dshape.MultTranspose(u, vec);
 
-      Trans.SetIntPoint (&ip);
+      Trans.SetIntPoint(&ip);
       CalcInverse(Trans.Jacobian(), invdfdx);
       invdfdx.MultTranspose(vec, vecdxt);
 
@@ -1236,7 +1240,6 @@ const IntegrationRule &DiffusionIntegrator::GetRule(
    return IntRules.Get(trial_fe.GetGeomType(), order);
 }
 
-
 void MassIntegrator::AssembleElementMatrix
 ( const FiniteElement &el, ElementTransformation &Trans,
   DenseMatrix &elmat )
@@ -1257,14 +1260,14 @@ void MassIntegrator::AssembleElementMatrix
    for (int i = 0; i < ir->GetNPoints(); i++)
    {
       const IntegrationPoint &ip = ir->IntPoint(i);
-      Trans.SetIntPoint (&ip);
+      Trans.SetIntPoint(&ip);
 
       el.CalcPhysShape(Trans, shape);
 
       w = Trans.Weight() * ip.weight;
       if (Q)
       {
-         w *= Q -> Eval(Trans, ip);
+         w *= Q->Eval(Trans, ip);
       }
 
       AddMult_a_VVt(w, shape, elmat);
@@ -1296,11 +1299,11 @@ void MassIntegrator::AssembleElementMatrix2(
       trial_fe.CalcShape(ip, shape);
       test_fe.CalcShape(ip, te_shape);
 
-      Trans.SetIntPoint (&ip);
+      Trans.SetIntPoint(&ip);
       w = Trans.Weight() * ip.weight;
       if (Q)
       {
-         w *= Q -> Eval(Trans, ip);
+         w *= Q->Eval(Trans, ip);
       }
 
       te_shape *= w;
@@ -1321,7 +1324,6 @@ const IntegrationRule &MassIntegrator::GetRule(const FiniteElement &trial_fe,
    }
    return IntRules.Get(trial_fe.GetGeomType(), order);
 }
-
 
 void BoundaryMassIntegrator::AssembleFaceMatrix(
    const FiniteElement &el1, const FiniteElement &el2,
@@ -1362,7 +1364,7 @@ void BoundaryMassIntegrator::AssembleFaceMatrix(
       w = Trans.Weight() * ip.weight;
       if (Q)
       {
-         w *= Q -> Eval(Trans, ip);
+         w *= Q->Eval(Trans, ip);
       }
 
       AddMult_a_VVt(w, shape, elmat);
@@ -1416,6 +1418,12 @@ void ConvectionIntegrator::AssembleElementMatrix(
    }
 }
 
+const IntegrationRule &ConvectionIntegrator::GetRule(
+   const FiniteElement &fe, ElementTransformation &Trans)
+{
+   int order = Trans.OrderGrad(&fe) + Trans.Order() + fe.GetOrder();
+   return IntRules.Get(fe.GetGeomType(), order);
+}
 
 void GroupConvectionIntegrator::AssembleElementMatrix(
    const FiniteElement &el, ElementTransformation &Trans, DenseMatrix &elmat)
@@ -1469,21 +1477,6 @@ void GroupConvectionIntegrator::AssembleElementMatrix(
    }
 }
 
-const IntegrationRule &ConvectionIntegrator::GetRule(
-   const FiniteElement &trial_fe, const FiniteElement &test_fe,
-   ElementTransformation &Trans)
-{
-   int order = Trans.OrderGrad(&trial_fe) + Trans.Order() + test_fe.GetOrder();
-
-   return IntRules.Get(trial_fe.GetGeomType(), order);
-}
-
-const IntegrationRule &ConvectionIntegrator::GetRule(
-   const FiniteElement &el, ElementTransformation &Trans)
-{
-   return GetRule(el,el,Trans);
-}
-
 void VectorMassIntegrator::AssembleElementMatrix
 ( const FiniteElement &el, ElementTransformation &Trans,
   DenseMatrix &elmat )
@@ -1529,7 +1522,7 @@ void VectorMassIntegrator::AssembleElementMatrix
       const IntegrationPoint &ip = ir->IntPoint(s);
       el.CalcShape(ip, shape);
 
-      Trans.SetIntPoint (&ip);
+      Trans.SetIntPoint(&ip);
       norm = ip.weight * Trans.Weight();
 
       MultVVt(shape, partelmat);
@@ -1870,7 +1863,7 @@ void VectorFECurlIntegrator::AssembleElementMatrix2(
    }
 }
 
-void DerivativeIntegrator::AssembleElementMatrix2 (
+void DerivativeIntegrator::AssembleElementMatrix2(
    const FiniteElement &trial_fe,
    const FiniteElement &test_fe,
    ElementTransformation &Trans,
@@ -1884,12 +1877,12 @@ void DerivativeIntegrator::AssembleElementMatrix2 (
    int i, l;
    double det;
 
-   elmat.SetSize (test_nd,trial_nd);
-   dshape.SetSize (trial_nd,dim);
+   elmat.SetSize(test_nd,trial_nd);
+   dshape.SetSize(trial_nd,dim);
    dshapedxt.SetSize(trial_nd, spaceDim);
    dshapedxi.SetSize(trial_nd);
    invdfdx.SetSize(dim, spaceDim);
-   shape.SetSize (test_nd);
+   shape.SetSize(test_nd);
 
    const IntegrationRule *ir = IntRule;
    if (ir == NULL)
@@ -1921,10 +1914,10 @@ void DerivativeIntegrator::AssembleElementMatrix2 (
 
       trial_fe.CalcDShape(ip, dshape);
 
-      Trans.SetIntPoint (&ip);
-      CalcInverse (Trans.Jacobian(), invdfdx);
+      Trans.SetIntPoint(&ip);
+      CalcInverse(Trans.Jacobian(), invdfdx);
       det = Trans.Weight();
-      Mult (dshape, invdfdx, dshapedxt);
+      Mult(dshape, invdfdx, dshapedxt);
 
       test_fe.CalcShape(ip, shape);
 
@@ -1934,7 +1927,7 @@ void DerivativeIntegrator::AssembleElementMatrix2 (
       }
 
       shape *= Q->Eval(Trans,ip) * det * ip.weight;
-      AddMultVWt (shape, dshapedxi, elmat);
+      AddMultVWt(shape, dshapedxi, elmat);
    }
 }
 
@@ -1979,7 +1972,7 @@ void CurlCurlIntegrator::AssembleElementMatrix
    {
       const IntegrationPoint &ip = ir->IntPoint(i);
 
-      Trans.SetIntPoint (&ip);
+      Trans.SetIntPoint(&ip);
 
       w = ip.weight * Trans.Weight();
       el.CalcPhysCurlShape(Trans, curlshape_dFt);
@@ -2401,7 +2394,6 @@ void MixedCurlIntegrator::AssembleElementMatrix2(
    }
 }
 
-
 void VectorFEMassIntegrator::AssembleElementMatrix(
    const FiniteElement &el,
    ElementTransformation &Trans,
@@ -2439,7 +2431,7 @@ void VectorFEMassIntegrator::AssembleElementMatrix(
    {
       const IntegrationPoint &ip = ir->IntPoint(i);
 
-      Trans.SetIntPoint (&ip);
+      Trans.SetIntPoint(&ip);
 
       el.CalcVShape(Trans, trial_vshape);
 
@@ -2461,9 +2453,9 @@ void VectorFEMassIntegrator::AssembleElementMatrix(
       {
          if (Q)
          {
-            w *= Q -> Eval (Trans, ip);
+            w *= Q->Eval (Trans, ip);
          }
-         AddMult_a_AAt (w, trial_vshape, elmat);
+         AddMult_a_AAt(w, trial_vshape, elmat);
       }
    }
 }
@@ -2508,7 +2500,7 @@ void VectorFEMassIntegrator::AssembleElementMatrix2(
       {
          const IntegrationPoint &ip = ir->IntPoint(i);
 
-         Trans.SetIntPoint (&ip);
+         Trans.SetIntPoint(&ip);
 
          trial_fe.CalcVShape(Trans, trial_vshape);
          test_fe.CalcShape(ip, shape);
@@ -2594,7 +2586,7 @@ void VectorFEMassIntegrator::AssembleElementMatrix2(
 #endif
       DenseMatrix tmp(test_vshape.Height(), K.Width());
 
-      elmat.SetSize (test_dof, trial_dof);
+      elmat.SetSize(test_dof, trial_dof);
 
       const IntegrationRule *ir = IntRule;
       if (ir == NULL)
@@ -2608,7 +2600,7 @@ void VectorFEMassIntegrator::AssembleElementMatrix2(
       {
          const IntegrationPoint &ip = ir->IntPoint(i);
 
-         Trans.SetIntPoint (&ip);
+         Trans.SetIntPoint(&ip);
 
          trial_fe.CalcVShape(Trans, trial_vshape);
          test_fe.CalcVShape(Trans, test_vshape);
@@ -2631,7 +2623,7 @@ void VectorFEMassIntegrator::AssembleElementMatrix2(
          {
             if (Q)
             {
-               w *= Q -> Eval (Trans, ip);
+               w *= Q->Eval (Trans, ip);
             }
             AddMult_a_ABt(w,test_vshape,trial_vshape,elmat);
          }
@@ -2655,42 +2647,42 @@ void VectorDivergenceIntegrator::AssembleElementMatrix2(
    int test_dof = test_fe.GetDof();
    double c;
 
-   dshape.SetSize (trial_dof, dim);
-   gshape.SetSize (trial_dof, dim);
-   Jadj.SetSize (dim);
-   divshape.SetSize (dim*trial_dof);
-   shape.SetSize (test_dof);
+   dshape.SetSize(trial_dof, dim);
+   gshape.SetSize(trial_dof, dim);
+   Jadj.SetSize(dim);
+   divshape.SetSize(dim*trial_dof);
+   shape.SetSize(test_dof);
 
-   elmat.SetSize (test_dof, dim*trial_dof);
+   elmat.SetSize(test_dof, dim*trial_dof);
 
    const IntegrationRule *ir = IntRule ? IntRule : &GetRule(trial_fe, test_fe,
                                                             Trans);
 
    elmat = 0.0;
 
-   for (int i = 0; i < ir -> GetNPoints(); i++)
+   for (int i = 0; i < ir->GetNPoints(); i++)
    {
       const IntegrationPoint &ip = ir->IntPoint(i);
 
-      trial_fe.CalcDShape (ip, dshape);
-      test_fe.CalcShape (ip, shape);
+      trial_fe.CalcDShape(ip, dshape);
+      test_fe.CalcShape(ip, shape);
 
-      Trans.SetIntPoint (&ip);
+      Trans.SetIntPoint(&ip);
       CalcAdjugate(Trans.Jacobian(), Jadj);
 
-      Mult (dshape, Jadj, gshape);
+      Mult(dshape, Jadj, gshape);
 
       gshape.GradToDiv (divshape);
 
       c = ip.weight;
       if (Q)
       {
-         c *= Q -> Eval (Trans, ip);
+         c *= Q->Eval (Trans, ip);
       }
 
       // elmat += c * shape * divshape ^ t
       shape *= c;
-      AddMultVWt (shape, divshape, elmat);
+      AddMultVWt(shape, divshape, elmat);
    }
 }
 
@@ -2702,7 +2694,6 @@ const IntegrationRule &VectorDivergenceIntegrator::GetRule(
    int order = Trans.OrderGrad(&trial_fe) + test_fe.GetOrder() + Trans.OrderJ();
    return IntRules.Get(trial_fe.GetGeomType(), order);
 }
-
 
 void DivDivIntegrator::AssembleElementMatrix(
    const FiniteElement &el,
@@ -2728,22 +2719,22 @@ void DivDivIntegrator::AssembleElementMatrix(
 
    elmat = 0.0;
 
-   for (int i = 0; i < ir -> GetNPoints(); i++)
+   for (int i = 0; i < ir->GetNPoints(); i++)
    {
       const IntegrationPoint &ip = ir->IntPoint(i);
 
-      el.CalcDivShape (ip, divshape);
+      el.CalcDivShape(ip, divshape);
 
-      Trans.SetIntPoint (&ip);
+      Trans.SetIntPoint(&ip);
       c = ip.weight / Trans.Weight();
 
       if (Q)
       {
-         c *= Q -> Eval (Trans, ip);
+         c *= Q->Eval (Trans, ip);
       }
 
       // elmat += c * divshape * divshape ^ t
-      AddMult_a_VVt (c, divshape, elmat);
+      AddMult_a_VVt(c, divshape, elmat);
    }
 }
 
@@ -2776,19 +2767,19 @@ void DivDivIntegrator::AssembleElementMatrix2(
 
    elmat = 0.0;
 
-   for (int i = 0; i < ir -> GetNPoints(); i++)
+   for (int i = 0; i < ir->GetNPoints(); i++)
    {
       const IntegrationPoint &ip = ir->IntPoint(i);
 
       trial_fe.CalcDivShape(ip,divshape);
       test_fe.CalcDivShape(ip,te_divshape);
 
-      Trans.SetIntPoint (&ip);
+      Trans.SetIntPoint(&ip);
       c = ip.weight / Trans.Weight();
 
       if (Q)
       {
-         c *= Q -> Eval (Trans, ip);
+         c *= Q->Eval (Trans, ip);
       }
 
       te_divshape *= c;
@@ -2832,7 +2823,7 @@ void VectorDiffusionIntegrator::AssembleElementMatrix(
 
    elmat = 0.0;
 
-   for (int i = 0; i < ir -> GetNPoints(); i++)
+   for (int i = 0; i < ir->GetNPoints(); i++)
    {
 
       const IntegrationPoint &ip = ir->IntPoint(i);
@@ -2968,7 +2959,6 @@ void VectorDiffusionIntegrator::AssembleElementVector(
    }
 }
 
-
 void ElasticityIntegrator::AssembleElementMatrix(
    const FiniteElement &el, ElementTransformation &Trans, DenseMatrix &elmat)
 {
@@ -2999,7 +2989,7 @@ void ElasticityIntegrator::AssembleElementMatrix(
 
    elmat = 0.0;
 
-   for (int i = 0; i < ir -> GetNPoints(); i++)
+   for (int i = 0; i < ir->GetNPoints(); i++)
    {
       const IntegrationPoint &ip = ir->IntPoint(i);
 
@@ -3034,7 +3024,7 @@ void ElasticityIntegrator::AssembleElementMatrix(
             for (int k = 0; k < dof; k++)
                for (int l = 0; l < dof; l++)
                {
-                  elmat (dof*d+k, dof*d+l) += (M * w) * pelmat(k, l);
+                  elmat(dof*d+k, dof*d+l) += (M * w) * pelmat(k, l);
                }
          }
          for (int ii = 0; ii < dim; ii++)
@@ -3356,7 +3346,6 @@ void DGTraceIntegrator::AssembleFaceMatrix(const FiniteElement &el1,
    }
 }
 
-
 const IntegrationRule &DGTraceIntegrator::GetRule(
    Geometry::Type geom, int order, FaceElementTransformations &T)
 {
@@ -3599,8 +3588,6 @@ void DGDiffusionIntegrator::AssembleFaceMatrix(
    }
 }
 
-
-// static method
 void DGElasticityIntegrator::AssembleBlock(
    const int dim, const int row_ndofs, const int col_ndofs,
    const int row_offset, const int col_offset,
@@ -3823,7 +3810,6 @@ void DGElasticityIntegrator::AssembleFaceMatrix(
    }
 }
 
-
 void TraceJumpIntegrator::AssembleFaceMatrix(
    const FiniteElement &trial_face_fe, const FiniteElement &test_fe1,
    const FiniteElement &test_fe2, FaceElementTransformations &Trans,
@@ -4003,7 +3989,6 @@ void NormalTraceJumpIntegrator::AssembleFaceMatrix(
    }
 }
 
-
 void NormalInterpolator::AssembleElementMatrix2(
    const FiniteElement &dom_fe, const FiniteElement &ran_fe,
    ElementTransformation &Trans, DenseMatrix &elmat)
@@ -4028,7 +4013,6 @@ void NormalInterpolator::AssembleElementMatrix2(
       }
    }
 }
-
 
 namespace internal
 {
@@ -4070,7 +4054,6 @@ ScalarProductInterpolator::AssembleElementMatrix2(const FiniteElement &dom_fe,
    ran_fe.Project(dom_shape_coeff, Trans, elmat_as_vec);
 }
 
-
 void
 ScalarVectorProductInterpolator::AssembleElementMatrix2(
    const FiniteElement &dom_fe,
@@ -4104,7 +4087,6 @@ ScalarVectorProductInterpolator::AssembleElementMatrix2(
 
    ran_fe.ProjectMatrixCoefficient(dom_shape_coeff, Trans, elmat_as_vec);
 }
-
 
 void
 VectorScalarProductInterpolator::AssembleElementMatrix2(
@@ -4142,7 +4124,6 @@ VectorScalarProductInterpolator::AssembleElementMatrix2(
 
    ran_fe.ProjectMatrixCoefficient(dom_shape_coeff, Trans, elmat_as_vec);
 }
-
 
 void
 ScalarCrossProductInterpolator::AssembleElementMatrix2(
@@ -4239,7 +4220,6 @@ VectorCrossProductInterpolator::AssembleElementMatrix2(
    ran_fe.ProjectMatrixCoefficient(dom_shape_coeff, Trans, elmat_as_vec);
 }
 
-
 namespace internal
 {
 
@@ -4269,8 +4249,7 @@ struct VDotVShapeCoefficient : public VectorCoefficient
 
 }
 
-void
-VectorInnerProductInterpolator::AssembleElementMatrix2(
+void VectorInnerProductInterpolator::AssembleElementMatrix2(
    const FiniteElement &dom_fe,
    const FiniteElement &ran_fe,
    ElementTransformation &Trans,
