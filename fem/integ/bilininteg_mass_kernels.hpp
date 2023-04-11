@@ -764,13 +764,13 @@ void OccaPAMassApply3D(const int D1D,
 
 MFEM_HOST_DEVICE inline
 void PAMassApply1D(const int NE,
-                          const Array<double> &b_,
-                          const Array<double> &bt_,
-                          const Vector &d_,
-                          const Vector &x_,
-                          Vector &y_,
-                          const int d1d = 0,
-                          const int q1d = 0)
+                   const Array<double> &b_,
+                   const Array<double> &bt_,
+                   const Vector &d_,
+                   const Vector &x_,
+                   Vector &y_,
+                   const int d1d = 0,
+                   const int q1d = 0)
 {
    MFEM_VERIFY(d1d <= MAX_D1D, "");
    MFEM_VERIFY(q1d <= MAX_Q1D, "");
@@ -980,11 +980,11 @@ void PAMassApply(const int dim,
 
 MFEM_HOST_DEVICE inline
 void PAMassAssembleDiagonal1D(const int NE,
-                               const Array<double> &b,
-                               const Vector &d,
-                               Vector &y,
-                               const int D1D,
-                               const int Q1D)
+                              const Array<double> &b,
+                              const Vector &d,
+                              Vector &y,
+                              const int D1D,
+                              const int Q1D)
 {
    MFEM_VERIFY(D1D <= MAX_D1D, "");
    MFEM_VERIFY(Q1D <= MAX_Q1D, "");
