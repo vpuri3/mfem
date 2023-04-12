@@ -21,7 +21,7 @@ struct MassContext
    CeedScalar coeff;
 };
 
-/// libCEED Q-function for building quadrature data for a mass operator with a
+/// libCEED QFunction for building quadrature data for a mass operator with a
 /// constant coefficient
 CEED_QFUNCTION(f_build_mass_const)(void *ctx, CeedInt Q,
                                    const CeedScalar *const *in,
@@ -69,7 +69,7 @@ CEED_QFUNCTION(f_build_mass_const)(void *ctx, CeedInt Q,
    return 0;
 }
 
-/// libCEED Q-function for building quadrature data for a mass operator with a
+/// libCEED QFunction for building quadrature data for a mass operator with a
 /// coefficient evaluated at quadrature points.
 CEED_QFUNCTION(f_build_mass_quad)(void *ctx, CeedInt Q,
                                   const CeedScalar *const *in,
@@ -117,7 +117,7 @@ CEED_QFUNCTION(f_build_mass_quad)(void *ctx, CeedInt Q,
    return 0;
 }
 
-/// libCEED Q-function for applying a mass operator
+/// libCEED QFunction for applying a mass operator
 CEED_QFUNCTION(f_apply_mass)(void *ctx, CeedInt Q,
                              const CeedScalar *const *in,
                              CeedScalar *const *out)
@@ -157,7 +157,7 @@ CEED_QFUNCTION(f_apply_mass)(void *ctx, CeedInt Q,
    return 0;
 }
 
-/// libCEED Q-function for applying a mass operator
+/// libCEED QFunction for applying a mass operator
 CEED_QFUNCTION(f_apply_mass_mf_const)(void *ctx, CeedInt Q,
                                       const CeedScalar *const *in, CeedScalar *const *out)
 {

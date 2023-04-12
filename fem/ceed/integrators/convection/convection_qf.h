@@ -24,7 +24,7 @@ struct ConvectionContext
    CeedScalar alpha;
 };
 
-/// libCEED Q-function for building quadrature data for a convection operator
+/// libCEED QFunction for building quadrature data for a convection operator
 /// with a constant coefficient
 CEED_QFUNCTION(f_build_conv_const)(void *ctx, CeedInt Q,
                                    const CeedScalar *const *in,
@@ -76,7 +76,7 @@ CEED_QFUNCTION(f_build_conv_const)(void *ctx, CeedInt Q,
    return 0;
 }
 
-/// libCEED Q-function for building quadrature data for a convection operator
+/// libCEED QFunction for building quadrature data for a convection operator
 /// coefficient evaluated at quadrature points.
 CEED_QFUNCTION(f_build_conv_quad)(void *ctx, CeedInt Q,
                                   const CeedScalar *const *in,
@@ -128,7 +128,7 @@ CEED_QFUNCTION(f_build_conv_quad)(void *ctx, CeedInt Q,
    return 0;
 }
 
-/// libCEED Q-function for applying a conv operator
+/// libCEED QFunction for applying a conv operator
 CEED_QFUNCTION(f_apply_conv)(void *ctx, CeedInt Q,
                              const CeedScalar *const *in,
                              CeedScalar *const *out)
@@ -167,7 +167,7 @@ CEED_QFUNCTION(f_apply_conv)(void *ctx, CeedInt Q,
    return 0;
 }
 
-/// libCEED Q-function for applying a conv operator
+/// libCEED QFunction for applying a conv operator
 CEED_QFUNCTION(f_apply_conv_mf_const)(void *ctx, CeedInt Q,
                                       const CeedScalar *const *in,
                                       CeedScalar *const *out)

@@ -23,7 +23,7 @@ struct DiffusionContext
    CeedScalar coeff[LIBCEED_DIFF_COEFF_COMP_MAX];
 };
 
-/// libCEED Q-function for building quadrature data for a diffusion operator
+/// libCEED QFunction for building quadrature data for a diffusion operator
 /// with a constant coefficient
 CEED_QFUNCTION(f_build_diff_const)(void *ctx, CeedInt Q,
                                    const CeedScalar *const *in,
@@ -76,7 +76,7 @@ CEED_QFUNCTION(f_build_diff_const)(void *ctx, CeedInt Q,
    return 0;
 }
 
-/// libCEED Q-function for building quadrature data for a diffusion operator
+/// libCEED QFunction for building quadrature data for a diffusion operator
 /// coefficient evaluated at quadrature points.
 CEED_QFUNCTION(f_build_diff_quad)(void *ctx, CeedInt Q,
                                   const CeedScalar *const *in,
@@ -128,7 +128,7 @@ CEED_QFUNCTION(f_build_diff_quad)(void *ctx, CeedInt Q,
    return 0;
 }
 
-/// libCEED Q-function for applying a diff operator
+/// libCEED QFunction for applying a diff operator
 CEED_QFUNCTION(f_apply_diff)(void *ctx, CeedInt Q,
                              const CeedScalar *const *in,
                              CeedScalar *const *out)
@@ -234,7 +234,7 @@ CEED_QFUNCTION(f_apply_diff)(void *ctx, CeedInt Q,
    return 0;
 }
 
-/// libCEED Q-function for applying a diff operator
+/// libCEED QFunction for applying a diff operator
 CEED_QFUNCTION(f_apply_diff_mf_const)(void *ctx, CeedInt Q,
                                       const CeedScalar *const *in,
                                       CeedScalar *const *out)

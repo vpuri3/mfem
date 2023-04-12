@@ -87,7 +87,7 @@ const IntegrationRule &GetRule(
    const FiniteElement &test_fe,
    ElementTransformation &T);
 
-/// Return the path to the libCEED q-function headers.
+/// Return the path to the libCEED QFunction headers.
 const std::string &GetCeedPath();
 
 // Hash table for CeedBasis
