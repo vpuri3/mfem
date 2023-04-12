@@ -114,38 +114,16 @@ static void PAVectorDiffusionSetup3D(const int Q1D,
    });
 }
 
-static void PAVectorDiffusionSetup(const int dim,
-                                   const int Q1D,
-                                   const int NE,
-                                   const Array<double> &W,
-                                   const Vector &J,
-                                   const Vector &C,
-                                   Vector &op)
-{
-   if (!(dim == 2 || dim == 3))
-   {
-      MFEM_ABORT("Dimension not supported.");
-   }
-   if (dim == 2)
-   {
-      PAVectorDiffusionSetup2D(Q1D, NE, W, J, C, op);
-   }
-   if (dim == 3)
-   {
-      PAVectorDiffusionSetup3D(Q1D, NE, W, J, C, op);
-   }
-}
-
 void VectorDiffusionIntegrator::AssemblePA(const FiniteElementSpace &fes)
 {
    Mesh *mesh = fes.GetMesh();
    if (mesh->GetNE() == 0) { return; }
    if (DeviceCanUseCeed())
    {
+      MFEM_VERIFY(!VQ && !MQ,
+                  "Only scalar coefficient is supported for partial assembly for VectorDiffusionIntegrator");
       delete ceedOp;
-      if (MQ) { ceedOp = new ceed::PADiffusionIntegrator(*this, fes, MQ); }
-      else if (VQ) { ceedOp = new ceed::PADiffusionIntegrator(*this, fes, VQ); }
-      else { ceedOp = new ceed::PADiffusionIntegrator(*this, fes, Q); }
+      ceedOp = new ceed::PADiffusionIntegrator(*this, fes, Q);
       return;
    }
 
@@ -174,7 +152,7 @@ void VectorDiffusionIntegrator::AssemblePA(const FiniteElementSpace &fes)
    const Array<double> &w = ir->GetWeights();
    const Vector &j = geom->J;
    Vector &d = pa_data;
-   if (dim == 1) { MFEM_ABORT("dim==1 not supported in PAVectorDiffusionSetup"); }
+   if (dim == 1) { MFEM_ABORT("dim==1 not supported in VectorDiffusionIntegrator::AssemblePA"); }
    if (dim == 2 && sdim == 3)
    {
       constexpr int DIM = 2;
@@ -213,7 +191,15 @@ void VectorDiffusionIntegrator::AssemblePA(const FiniteElementSpace &fes)
    }
    else
    {
-      PAVectorDiffusionSetup(dim, quad1D, ne, w, j, coeff, d);
+      if (dim == 2)
+      {
+         return PAVectorDiffusionSetup2D(quad1D, ne, w, j, coeff, d);
+      }
+      if (dim == 3)
+      {
+         return PAVectorDiffusionSetup3D(quad1D, ne, w, j, coeff, d);
+      }
+      MFEM_ABORT("Dimension not supported.");
    }
 }
 
@@ -224,10 +210,10 @@ void VectorDiffusionIntegrator::AssemblePABoundary(const FiniteElementSpace
    if (mesh->GetNBE() == 0) { return; }
    if (DeviceCanUseCeed())
    {
+      MFEM_VERIFY(!VQ && !MQ,
+                  "Only scalar coefficient is supported for partial assembly for VectorDiffusionIntegrator");
       delete ceedOp;
-      if (MQ) { ceedOp = new ceed::PADiffusionIntegrator(*this, fes, MQ, true); }
-      else if (VQ) { ceedOp = new ceed::PADiffusionIntegrator(*this, fes, VQ, true); }
-      else { ceedOp = new ceed::PADiffusionIntegrator(*this, fes, Q, true); }
+      ceedOp = new ceed::PADiffusionIntegrator(*this, fes, Q, true);
       return;
    }
 
@@ -763,26 +749,6 @@ static void PAVectorDiffusionDiagonal3D(const int NE,
    });
 }
 
-static void PAVectorDiffusionAssembleDiagonal(const int dim,
-                                              const int D1D,
-                                              const int Q1D,
-                                              const int NE,
-                                              const Array<double> &B,
-                                              const Array<double> &G,
-                                              const Vector &op,
-                                              Vector &y)
-{
-   if (dim == 2)
-   {
-      return PAVectorDiffusionDiagonal2D(NE, B, G, op, y, D1D, Q1D);
-   }
-   else if (dim == 3)
-   {
-      return PAVectorDiffusionDiagonal3D(NE, B, G, op, y, D1D, Q1D);
-   }
-   MFEM_ABORT("Dimension not implemented.");
-}
-
 void VectorDiffusionIntegrator::AssembleDiagonalPA(Vector &diag)
 {
    if (DeviceCanUseCeed())
@@ -791,14 +757,19 @@ void VectorDiffusionIntegrator::AssembleDiagonalPA(Vector &diag)
    }
    else
    {
-      PAVectorDiffusionAssembleDiagonal(dim,
-                                        dofs1D,
-                                        quad1D,
-                                        ne,
-                                        maps->B,
-                                        maps->G,
-                                        pa_data,
-                                        diag);
+      if (dim == 2)
+      {
+         return PAVectorDiffusionDiagonal2D(ne, maps->B, maps->G,
+                                            pa_data, diag,
+                                            dofs1D, quad1D);
+      }
+      if (dim == 3)
+      {
+         return PAVectorDiffusionDiagonal3D(ne, maps->B, maps->G,
+                                            pa_data, diag,
+                                            dofs1D, quad1D);
+      }
+      MFEM_ABORT("Dimension not implemented.");
    }
 }
 

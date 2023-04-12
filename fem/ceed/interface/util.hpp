@@ -110,11 +110,9 @@ struct BasisHash
 };
 using BasisMap = std::unordered_map<const BasisKey, CeedBasis, BasisHash>;
 
-enum restr_type {Standard, Strided};
-
 // Hash table for CeedElemRestriction
 using RestrKey =
-   std::tuple<const mfem::FiniteElementSpace *, int, int, int, int>;
+   std::tuple<const mfem::FiniteElementSpace *, int, int, int, int, int, int>;
 struct RestrHash
 {
    std::size_t operator()(const RestrKey &k) const
@@ -126,7 +124,10 @@ struct RestrHash
                       CeedHashInt(std::get<1>(k))),
                    CeedHashCombine(CeedHashInt(std::get<2>(k)),
                                    CeedHashInt(std::get<3>(k)))),
-                CeedHashInt(std::get<4>(k)));
+                CeedHashCombine(
+                   CeedHashCombine(CeedHashInt(std::get<4>(k)),
+                                   CeedHashInt(std::get<5>(k))),
+                   CeedHashInt(std::get<6>(k))));
    }
 };
 using RestrMap =
