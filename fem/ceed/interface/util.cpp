@@ -227,16 +227,6 @@ const IntegrationRule &GetRule<ConvectionIntegrator>(
 }
 
 template <>
-const IntegrationRule &GetRule<VectorConvectionNLFIntegrator>(
-   const VectorConvectionNLFIntegrator &integ,
-   const FiniteElement &trial_fe,
-   const FiniteElement &test_fe,
-   ElementTransformation &T)
-{
-   return VectorConvectionNLFIntegrator::GetRule(trial_fe, T);
-}
-
-template <>
 const IntegrationRule &GetRule<DiffusionIntegrator>(
    const DiffusionIntegrator &integ,
    const FiniteElement &trial_fe,
@@ -254,6 +244,46 @@ const IntegrationRule &GetRule<VectorDiffusionIntegrator>(
    ElementTransformation &T)
 {
    return DiffusionIntegrator::GetRule(trial_fe, test_fe);
+}
+
+template <>
+const IntegrationRule &GetRule<VectorConvectionNLFIntegrator>(
+   const VectorConvectionNLFIntegrator &integ,
+   const FiniteElement &trial_fe,
+   const FiniteElement &test_fe,
+   ElementTransformation &T)
+{
+   return VectorConvectionNLFIntegrator::GetRule(trial_fe, T);
+}
+
+template <>
+const IntegrationRule &GetRule<VectorFEMassIntegrator>(
+   const VectorFEMassIntegrator &integ,
+   const FiniteElement &trial_fe,
+   const FiniteElement &test_fe,
+   ElementTransformation &T)
+{
+   return VectorFEMassIntegrator::GetRule(trial_fe, test_fe, T);
+}
+
+template <>
+const IntegrationRule &GetRule<DivDivIntegrator>(
+   const DivDivIntegrator &integ,
+   const FiniteElement &trial_fe,
+   const FiniteElement &test_fe,
+   ElementTransformation &T)
+{
+   return DivDivIntegrator::GetRule(trial_fe, test_fe);
+}
+
+template <>
+const IntegrationRule &GetRule<CurlCurlIntegrator>(
+   const CurlCurlIntegrator &integ,
+   const FiniteElement &trial_fe,
+   const FiniteElement &test_fe,
+   ElementTransformation &T)
+{
+   return CurlCurlIntegrator::GetRule(trial_fe, test_fe);
 }
 
 std::string ceed_path;

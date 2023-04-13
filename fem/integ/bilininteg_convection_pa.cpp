@@ -1550,7 +1550,7 @@ void ConvectionIntegrator::AddMultTransposePA(const Vector &x, Vector &y) const
 {
    if (DeviceCanUseCeed())
    {
-      MFEM_ABORT("AddMultPA not yet implemented with libCEED for"
+      MFEM_ABORT("AddMultTransposePA not yet implemented with libCEED for"
                  " ConvectionIntegrator.");
    }
    else

@@ -2579,9 +2579,24 @@ public:
    using BilinearFormIntegrator::AssemblePA;
    virtual void AssemblePA(const FiniteElementSpace &fes);
 
+   virtual void AssemblePABoundary(const FiniteElementSpace &fes);
+
    virtual void AssembleDiagonalPA(Vector &diag);
 
    virtual void AddMultPA(const Vector &x, Vector &y) const;
+
+   virtual void AssembleMF(const FiniteElementSpace &fes);
+
+   virtual void AssembleMFBoundary(const FiniteElementSpace &fes);
+
+   virtual void AssembleDiagonalMF(Vector &diag);
+
+   virtual void AddMultMF(const Vector &x, Vector &y) const;
+
+   static const IntegrationRule &GetRule(const FiniteElement &trial_fe,
+                                         const FiniteElement &test_fe);
+
+   bool SupportsCeed() const { return DeviceCanUseCeed(); }
 
    const Coefficient *GetCoefficient() const { return Q; }
 };
@@ -2695,16 +2710,32 @@ public:
                                        DenseMatrix &elmat);
 
    using BilinearFormIntegrator::AssemblePA;
-   virtual void AssemblePA(const FiniteElementSpace &fes);
+   virtual void AssemblePA(const FiniteElementSpace &fes) { AssemblePA(fes, fes); }
 
    virtual void AssemblePA(const FiniteElementSpace &trial_fes,
                            const FiniteElementSpace &test_fes);
+
+   virtual void AssemblePABoundary(const FiniteElementSpace &fes);
+
+   virtual void AssembleDiagonalPA(Vector &diag);
 
    virtual void AddMultPA(const Vector &x, Vector &y) const;
 
    virtual void AddMultTransposePA(const Vector &x, Vector &y) const;
 
-   virtual void AssembleDiagonalPA(Vector &diag);
+   virtual void AssembleMF(const FiniteElementSpace &fes);
+
+   virtual void AssembleMFBoundary(const FiniteElementSpace &fes);
+
+   virtual void AssembleDiagonalMF(Vector &diag);
+
+   virtual void AddMultMF(const Vector &x, Vector &y) const;
+
+   static const IntegrationRule &GetRule(const FiniteElement &trial_fe,
+                                         const FiniteElement &test_fe,
+                                         ElementTransformation &Trans);
+
+   bool SupportsCeed() const { return DeviceCanUseCeed(); }
 
    const Coefficient *GetCoefficient() const { return Q; }
 };
@@ -2794,9 +2825,24 @@ public:
    using BilinearFormIntegrator::AssemblePA;
    virtual void AssemblePA(const FiniteElementSpace &fes);
 
+   virtual void AssemblePABoundary(const FiniteElementSpace &fes);
+
    virtual void AssembleDiagonalPA(Vector &diag);
 
    virtual void AddMultPA(const Vector &x, Vector &y) const;
+
+   virtual void AssembleMF(const FiniteElementSpace &fes);
+
+   virtual void AssembleMFBoundary(const FiniteElementSpace &fes);
+
+   virtual void AssembleDiagonalMF(Vector &diag);
+
+   virtual void AddMultMF(const Vector &x, Vector &y) const;
+
+   static const IntegrationRule &GetRule(const FiniteElement &trial_fe,
+                                         const FiniteElement &test_fe);
+
+   bool SupportsCeed() const { return DeviceCanUseCeed(); }
 
    const Coefficient *GetCoefficient() const { return Q; }
 };

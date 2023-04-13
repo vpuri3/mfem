@@ -13,6 +13,7 @@
 #include "../bilininteg.hpp"
 #include "../gridfunc.hpp"
 #include "../qfunction.hpp"
+#include "../ceed/integrators/curlcurl/curlcurl.hpp"
 #include "bilininteg_hcurl_kernels.hpp"
 
 using namespace std;
@@ -22,32 +23,36 @@ namespace mfem
 
 void CurlCurlIntegrator::AssemblePA(const FiniteElementSpace &fes)
 {
-   // Assumes tensor-product elements
    Mesh *mesh = fes.GetMesh();
-   const FiniteElement *fel = fes.GetFE(0);
+   if (mesh->GetNE() == 0) { return; }
+   if (DeviceCanUseCeed())
+   {
+      delete ceedOp;
+      if (MQ) { ceedOp = new ceed::PACurlCurlIntegrator(*this, fes, MQ); }
+      else if (DQ) { ceedOp = new ceed::PACurlCurlIntegrator(*this, fes, DQ); }
+      else { ceedOp = new ceed::PACurlCurlIntegrator(*this, fes, Q); }
+      return;
+   }
 
+   // Assumes tensor-product elements
+   const FiniteElement *fel = fes.GetFE(0);
    const VectorTensorFiniteElement *el =
       dynamic_cast<const VectorTensorFiniteElement*>(fel);
    MFEM_VERIFY(el != NULL, "Only VectorTensorFiniteElement is supported!");
-
    const IntegrationRule *ir
       = IntRule ? IntRule : &MassIntegrator::GetRule(*el, *el,
                                                      *mesh->GetElementTransformation(0));
-
    const int dims = el->GetDim();
    MFEM_VERIFY(dims == 2 || dims == 3, "");
-
    nq = ir->GetNPoints();
    dim = mesh->Dimension();
    MFEM_VERIFY(dim == 2 || dim == 3, "");
-
    ne = fes.GetNE();
    geom = mesh->GetGeometricFactors(*ir, GeometricFactors::JACOBIANS);
    mapsC = &el->GetDofToQuad(*ir, DofToQuad::TENSOR);
    mapsO = &el->GetDofToQuadOpen(*ir, DofToQuad::TENSOR);
    dofs1D = mapsC->ndof;
    quad1D = mapsC->nqpt;
-
    MFEM_VERIFY(dofs1D == mapsO->ndof + 1 && quad1D == mapsO->nqpt, "");
 
    QuadratureSpace qs(*mesh, *ir);
@@ -80,128 +85,162 @@ void CurlCurlIntegrator::AssemblePA(const FiniteElementSpace &fes)
    }
 }
 
+void CurlCurlIntegrator::AssemblePABoundary(const FiniteElementSpace &fes)
+{
+   Mesh *mesh = fes.GetMesh();
+   if (mesh->GetNBE() == 0) { return; }
+   if (DeviceCanUseCeed())
+   {
+      delete ceedOp;
+      if (MQ) { ceedOp = new ceed::PACurlCurlIntegrator(*this, fes, MQ, true); }
+      else if (DQ) { ceedOp = new ceed::PACurlCurlIntegrator(*this, fes, DQ, true); }
+      else { ceedOp = new ceed::PACurlCurlIntegrator(*this, fes, Q, true); }
+      return;
+   }
+
+   // Assumes tensor-product elements
+   // const FiniteElement &el = *fes.GetBE(0);
+   // const IntegrationRule *ir = IntRule ? IntRule : &GetRule(el, el);
+   MFEM_ABORT("Error: CurlCurlIntegrator::AssemblePABoundary only implemented with"
+              " libCEED");
+}
+
 void CurlCurlIntegrator::AddMultPA(const Vector &x, Vector &y) const
 {
-   if (dim == 3)
+   if (DeviceCanUseCeed())
    {
-      if (Device::Allows(Backend::DEVICE_MASK))
-      {
-         const int ID = (dofs1D << 4) | quad1D;
-         switch (ID)
-         {
-            case 0x23:
-               return internal::SmemPACurlCurlApply3D<2,3>(
-                         dofs1D, quad1D,
-                         symmetric, ne,
-                         mapsO->B, mapsC->B, mapsO->Bt,
-                         mapsC->Bt, mapsC->G, mapsC->Gt, pa_data, x, y);
-            case 0x34:
-               return internal::SmemPACurlCurlApply3D<3,4>(
-                         dofs1D, quad1D,
-                         symmetric, ne,
-                         mapsO->B, mapsC->B, mapsO->Bt,
-                         mapsC->Bt, mapsC->G, mapsC->Gt, pa_data, x, y);
-            case 0x45:
-               return internal::SmemPACurlCurlApply3D<4,5>(
-                         dofs1D, quad1D,
-                         symmetric, ne,
-                         mapsO->B,
-                         mapsC->B, mapsO->Bt,
-                         mapsC->Bt, mapsC->G, mapsC->Gt, pa_data, x, y);
-            case 0x56:
-               return internal::SmemPACurlCurlApply3D<5,6>(
-                         dofs1D, quad1D,
-                         symmetric, ne,
-                         mapsO->B, mapsC->B, mapsO->Bt,
-                         mapsC->Bt, mapsC->G, mapsC->Gt, pa_data, x, y);
-            default:
-               return internal::SmemPACurlCurlApply3D(
-                         dofs1D, quad1D, symmetric, ne,
-                         mapsO->B,
-                         mapsC->B, mapsO->Bt, mapsC->Bt,
-                         mapsC->G, mapsC->Gt, pa_data, x, y);
-         }
-      }
-      else
-         internal::PACurlCurlApply3D(dofs1D, quad1D, symmetric, ne, mapsO->B, mapsC->B,
-                                     mapsO->Bt,
-                                     mapsC->Bt, mapsC->G, mapsC->Gt, pa_data, x, y);
-   }
-   else if (dim == 2)
-   {
-      internal::PACurlCurlApply2D(dofs1D, quad1D, ne, mapsO->B, mapsO->Bt,
-                                  mapsC->G, mapsC->Gt, pa_data, x, y);
+      ceedOp->AddMult(x, y);
    }
    else
    {
-      MFEM_ABORT("Unsupported dimension!");
+      if (dim == 3)
+      {
+         if (Device::Allows(Backend::DEVICE_MASK))
+         {
+            const int ID = (dofs1D << 4) | quad1D;
+            switch (ID)
+            {
+               case 0x23:
+                  return internal::SmemPACurlCurlApply3D<2,3>(
+                            dofs1D, quad1D,
+                            symmetric, ne,
+                            mapsO->B, mapsC->B, mapsO->Bt,
+                            mapsC->Bt, mapsC->G, mapsC->Gt, pa_data, x, y);
+               case 0x34:
+                  return internal::SmemPACurlCurlApply3D<3,4>(
+                            dofs1D, quad1D,
+                            symmetric, ne,
+                            mapsO->B, mapsC->B, mapsO->Bt,
+                            mapsC->Bt, mapsC->G, mapsC->Gt, pa_data, x, y);
+               case 0x45:
+                  return internal::SmemPACurlCurlApply3D<4,5>(
+                            dofs1D, quad1D,
+                            symmetric, ne,
+                            mapsO->B,
+                            mapsC->B, mapsO->Bt,
+                            mapsC->Bt, mapsC->G, mapsC->Gt, pa_data, x, y);
+               case 0x56:
+                  return internal::SmemPACurlCurlApply3D<5,6>(
+                            dofs1D, quad1D,
+                            symmetric, ne,
+                            mapsO->B, mapsC->B, mapsO->Bt,
+                            mapsC->Bt, mapsC->G, mapsC->Gt, pa_data, x, y);
+               default:
+                  return internal::SmemPACurlCurlApply3D(
+                            dofs1D, quad1D, symmetric, ne,
+                            mapsO->B,
+                            mapsC->B, mapsO->Bt, mapsC->Bt,
+                            mapsC->G, mapsC->Gt, pa_data, x, y);
+            }
+         }
+         else
+            internal::PACurlCurlApply3D(dofs1D, quad1D, symmetric, ne, mapsO->B, mapsC->B,
+                                        mapsO->Bt,
+                                        mapsC->Bt, mapsC->G, mapsC->Gt, pa_data, x, y);
+      }
+      else if (dim == 2)
+      {
+         internal::PACurlCurlApply2D(dofs1D, quad1D, ne, mapsO->B, mapsO->Bt,
+                                     mapsC->G, mapsC->Gt, pa_data, x, y);
+      }
+      else
+      {
+         MFEM_ABORT("Unsupported dimension!");
+      }
    }
 }
 
-void CurlCurlIntegrator::AssembleDiagonalPA(Vector& diag)
+void CurlCurlIntegrator::AssembleDiagonalPA(Vector &diag)
 {
-   if (dim == 3)
+   if (DeviceCanUseCeed())
    {
-      if (Device::Allows(Backend::DEVICE_MASK))
-      {
-         const int ID = (dofs1D << 4) | quad1D;
-         switch (ID)
-         {
-            case 0x23:
-               return internal::SmemPACurlCurlAssembleDiagonal3D<2,3>(
-                         dofs1D,
-                         quad1D,
-                         symmetric, ne,
-                         mapsO->B, mapsC->B,
-                         mapsO->G, mapsC->G,
-                         pa_data, diag);
-            case 0x34:
-               return internal::SmemPACurlCurlAssembleDiagonal3D<3,4>(
-                         dofs1D,
-                         quad1D,
-                         symmetric, ne,
-                         mapsO->B, mapsC->B,
-                         mapsO->G, mapsC->G,
-                         pa_data, diag);
-            case 0x45:
-               return internal::SmemPACurlCurlAssembleDiagonal3D<4,5>(
-                         dofs1D,
-                         quad1D,
-                         symmetric, ne,
-                         mapsO->B, mapsC->B,
-                         mapsO->G, mapsC->G,
-                         pa_data, diag);
-            case 0x56:
-               return internal::SmemPACurlCurlAssembleDiagonal3D<5,6>(
-                         dofs1D,
-                         quad1D,
-                         symmetric, ne,
-                         mapsO->B, mapsC->B,
-                         mapsO->G, mapsC->G,
-                         pa_data, diag);
-            default:
-               return internal::SmemPACurlCurlAssembleDiagonal3D(
-                         dofs1D, quad1D,
-                         symmetric, ne,
-                         mapsO->B, mapsC->B,
-                         mapsO->G, mapsC->G,
-                         pa_data, diag);
-         }
-      }
-      else
-         internal::PACurlCurlAssembleDiagonal3D(dofs1D, quad1D, symmetric, ne,
-                                                mapsO->B, mapsC->B,
-                                                mapsO->G, mapsC->G,
-                                                pa_data, diag);
-   }
-   else if (dim == 2)
-   {
-      internal::PACurlCurlAssembleDiagonal2D(dofs1D, quad1D, ne,
-                                             mapsO->B, mapsC->G, pa_data, diag);
+      ceedOp->GetDiagonal(diag);
    }
    else
    {
-      MFEM_ABORT("Unsupported dimension!");
+      if (dim == 3)
+      {
+         if (Device::Allows(Backend::DEVICE_MASK))
+         {
+            const int ID = (dofs1D << 4) | quad1D;
+            switch (ID)
+            {
+               case 0x23:
+                  return internal::SmemPACurlCurlAssembleDiagonal3D<2,3>(
+                            dofs1D,
+                            quad1D,
+                            symmetric, ne,
+                            mapsO->B, mapsC->B,
+                            mapsO->G, mapsC->G,
+                            pa_data, diag);
+               case 0x34:
+                  return internal::SmemPACurlCurlAssembleDiagonal3D<3,4>(
+                            dofs1D,
+                            quad1D,
+                            symmetric, ne,
+                            mapsO->B, mapsC->B,
+                            mapsO->G, mapsC->G,
+                            pa_data, diag);
+               case 0x45:
+                  return internal::SmemPACurlCurlAssembleDiagonal3D<4,5>(
+                            dofs1D,
+                            quad1D,
+                            symmetric, ne,
+                            mapsO->B, mapsC->B,
+                            mapsO->G, mapsC->G,
+                            pa_data, diag);
+               case 0x56:
+                  return internal::SmemPACurlCurlAssembleDiagonal3D<5,6>(
+                            dofs1D,
+                            quad1D,
+                            symmetric, ne,
+                            mapsO->B, mapsC->B,
+                            mapsO->G, mapsC->G,
+                            pa_data, diag);
+               default:
+                  return internal::SmemPACurlCurlAssembleDiagonal3D(
+                            dofs1D, quad1D,
+                            symmetric, ne,
+                            mapsO->B, mapsC->B,
+                            mapsO->G, mapsC->G,
+                            pa_data, diag);
+            }
+         }
+         else
+            internal::PACurlCurlAssembleDiagonal3D(dofs1D, quad1D, symmetric, ne,
+                                                   mapsO->B, mapsC->B,
+                                                   mapsO->G, mapsC->G,
+                                                   pa_data, diag);
+      }
+      else if (dim == 2)
+      {
+         internal::PACurlCurlAssembleDiagonal2D(dofs1D, quad1D, ne,
+                                                mapsO->B, mapsC->G, pa_data, diag);
+      }
+      else
+      {
+         MFEM_ABORT("Unsupported dimension!");
+      }
    }
 }
 

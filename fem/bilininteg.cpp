@@ -726,7 +726,7 @@ void MixedScalarVectorIntegrator::AssembleElementMatrix2(
       VQ->Eval(V, Trans, ip);
       V *= w;
 
-      if ( vdim == 2 && cross_2d )
+      if (vdim == 2 && cross_2d)
       {
          vtmp = V[0];
          V[0] = -V[1];
@@ -794,18 +794,18 @@ void GradientIntegrator::AssembleElementMatrix2(
    }
 }
 
-const IntegrationRule &GradientIntegrator::GetRule(const FiniteElement
-                                                   &trial_fe,
-                                                   const FiniteElement &test_fe,
-                                                   ElementTransformation &Trans)
+const IntegrationRule &GradientIntegrator::GetRule(
+   const FiniteElement &trial_fe,
+   const FiniteElement &test_fe,
+   ElementTransformation &Trans)
 {
    int order = Trans.OrderGrad(&trial_fe) + test_fe.GetOrder() + Trans.OrderJ();
    return IntRules.Get(trial_fe.GetGeomType(), order);
 }
 
-void DiffusionIntegrator::AssembleElementMatrix
-( const FiniteElement &el, ElementTransformation &Trans,
-  DenseMatrix &elmat )
+void DiffusionIntegrator::AssembleElementMatrix(
+   const FiniteElement &el, ElementTransformation &Trans,
+   DenseMatrix &elmat)
 {
    int nd = el.GetDof();
    dim = el.GetDim();
@@ -1044,10 +1044,14 @@ void DiffusionIntegrator::AssembleElementVector(
    }
 }
 
-void DiffusionIntegrator::ComputeElementFlux
-( const FiniteElement &el, ElementTransformation &Trans,
-  Vector &u, const FiniteElement &fluxelem, Vector &flux, bool with_coef,
-  const IntegrationRule *ir)
+void DiffusionIntegrator::ComputeElementFlux(
+   const FiniteElement &el,
+   ElementTransformation &Trans,
+   Vector &u,
+   const FiniteElement &fluxelem,
+   Vector &flux,
+   bool with_coef,
+   const IntegrationRule *ir)
 {
    int nd, spaceDim, fnd;
 
@@ -1087,7 +1091,7 @@ void DiffusionIntegrator::ComputeElementFlux
       ir = &fluxelem.GetNodes();
    }
    fnd = ir->GetNPoints();
-   flux.SetSize( fnd * spaceDim );
+   flux.SetSize(fnd * spaceDim);
 
    for (int i = 0; i < fnd; i++)
    {
@@ -1143,9 +1147,11 @@ void DiffusionIntegrator::ComputeElementFlux
    }
 }
 
-double DiffusionIntegrator::ComputeFluxEnergy
-( const FiniteElement &fluxelem, ElementTransformation &Trans,
-  Vector &flux, Vector* d_energy)
+double DiffusionIntegrator::ComputeFluxEnergy(
+   const FiniteElement &fluxelem,
+   ElementTransformation &Trans,
+   Vector &flux,
+   Vector* d_energy)
 {
    int nd = fluxelem.GetDof();
    dim = fluxelem.GetDim();
@@ -1220,7 +1226,8 @@ double DiffusionIntegrator::ComputeFluxEnergy
 }
 
 const IntegrationRule &DiffusionIntegrator::GetRule(
-   const FiniteElement &trial_fe, const FiniteElement &test_fe)
+   const FiniteElement &trial_fe,
+   const FiniteElement &test_fe)
 {
    int order;
    if (trial_fe.Space() == FunctionSpace::Pk)
@@ -1232,7 +1239,6 @@ const IntegrationRule &DiffusionIntegrator::GetRule(
       // order = 2*el.GetOrder() - 2;  // <-- this seems to work fine too
       order = trial_fe.GetOrder() + test_fe.GetOrder() + trial_fe.GetDim() - 1;
    }
-
    if (trial_fe.Space() == FunctionSpace::rQk)
    {
       return RefinedIntRules.Get(trial_fe.GetGeomType(), order);
@@ -1240,9 +1246,10 @@ const IntegrationRule &DiffusionIntegrator::GetRule(
    return IntRules.Get(trial_fe.GetGeomType(), order);
 }
 
-void MassIntegrator::AssembleElementMatrix
-( const FiniteElement &el, ElementTransformation &Trans,
-  DenseMatrix &elmat )
+void MassIntegrator::AssembleElementMatrix(
+   const FiniteElement &el,
+   ElementTransformation &Trans,
+   DenseMatrix &elmat)
 {
    int nd = el.GetDof();
    // int dim = el.GetDim();
@@ -1251,12 +1258,12 @@ void MassIntegrator::AssembleElementMatrix
 #ifdef MFEM_THREAD_SAFE
    Vector shape;
 #endif
-   elmat.SetSize(nd);
    shape.SetSize(nd);
+   elmat.SetSize(nd);
+   elmat = 0.0;
 
    const IntegrationRule *ir = IntRule ? IntRule : &GetRule(el, el, Trans);
 
-   elmat = 0.0;
    for (int i = 0; i < ir->GetNPoints(); i++)
    {
       const IntegrationPoint &ip = ir->IntPoint(i);
@@ -1419,14 +1426,17 @@ void ConvectionIntegrator::AssembleElementMatrix(
 }
 
 const IntegrationRule &ConvectionIntegrator::GetRule(
-   const FiniteElement &fe, ElementTransformation &Trans)
+   const FiniteElement &fe,
+   ElementTransformation &Trans)
 {
    int order = Trans.OrderGrad(&fe) + Trans.Order() + fe.GetOrder();
    return IntRules.Get(fe.GetGeomType(), order);
 }
 
 void GroupConvectionIntegrator::AssembleElementMatrix(
-   const FiniteElement &el, ElementTransformation &Trans, DenseMatrix &elmat)
+   const FiniteElement &el,
+   ElementTransformation &Trans,
+   DenseMatrix &elmat)
 {
    int nd = el.GetDof();
    int dim = el.GetDim();
@@ -1477,9 +1487,10 @@ void GroupConvectionIntegrator::AssembleElementMatrix(
    }
 }
 
-void VectorMassIntegrator::AssembleElementMatrix
-( const FiniteElement &el, ElementTransformation &Trans,
-  DenseMatrix &elmat )
+void VectorMassIntegrator::AssembleElementMatrix(
+   const FiniteElement &el,
+   ElementTransformation &Trans,
+   DenseMatrix &elmat)
 {
    int nd = el.GetDof();
    int spaceDim = Trans.GetSpaceDim();
@@ -1779,7 +1790,7 @@ void VectorFECurlIntegrator::AssembleElementMatrix2(
                "At least one of the finite elements must be in H(Curl)");
 
    int curl_nd, vec_nd;
-   if ( trial_fe.GetMapType() == mfem::FiniteElement::H_CURL )
+   if (trial_fe.GetMapType() == mfem::FiniteElement::H_CURL)
    {
       curl_nd = trial_nd;
       vec_nd  = test_nd;
@@ -1818,7 +1829,7 @@ void VectorFECurlIntegrator::AssembleElementMatrix2(
       Trans.SetIntPoint(&ip);
       if (dim == 3)
       {
-         if ( trial_fe.GetMapType() == mfem::FiniteElement::H_CURL )
+         if (trial_fe.GetMapType() == mfem::FiniteElement::H_CURL)
          {
             trial_fe.CalcCurlShape(ip, curlshapeTrial);
             test_fe.CalcVShape(Trans, vshapeTest);
@@ -1832,7 +1843,7 @@ void VectorFECurlIntegrator::AssembleElementMatrix2(
       }
       else
       {
-         if ( trial_fe.GetMapType() == mfem::FiniteElement::H_CURL )
+         if (trial_fe.GetMapType() == mfem::FiniteElement::H_CURL)
          {
             trial_fe.CalcCurlShape(ip, curlshapeTrial_dFT);
             test_fe.CalcShape(ip, shapeTest);
@@ -1852,7 +1863,7 @@ void VectorFECurlIntegrator::AssembleElementMatrix2(
       }
       // Note: shapeTest points to the same data as vshapeTest
       vshapeTest *= w;
-      if ( trial_fe.GetMapType() == mfem::FiniteElement::H_CURL )
+      if (trial_fe.GetMapType() == mfem::FiniteElement::H_CURL)
       {
          AddMultABt(vshapeTest, curlshapeTrial_dFT, elmat);
       }
@@ -1931,9 +1942,10 @@ void DerivativeIntegrator::AssembleElementMatrix2(
    }
 }
 
-void CurlCurlIntegrator::AssembleElementMatrix
-( const FiniteElement &el, ElementTransformation &Trans,
-  DenseMatrix &elmat )
+void CurlCurlIntegrator::AssembleElementMatrix(
+   const FiniteElement &el,
+   ElementTransformation &Trans,
+   DenseMatrix &elmat)
 {
    int nd = el.GetDof();
    dim = el.GetDim();
@@ -1948,26 +1960,12 @@ void CurlCurlIntegrator::AssembleElementMatrix
    curlshape_dFt.SetSize(nd,dimc);
 #endif
    elmat.SetSize(nd);
+   elmat = 0.0;
    if (MQ) { M.SetSize(dimc); }
    if (DQ) { D.SetSize(dimc); }
 
-   const IntegrationRule *ir = IntRule;
-   if (ir == NULL)
-   {
-      int order;
-      if (el.Space() == FunctionSpace::Pk)
-      {
-         order = 2*el.GetOrder() - 2;
-      }
-      else
-      {
-         order = 2*el.GetOrder();
-      }
+   const IntegrationRule *ir = IntRule ? IntRule : &GetRule(el, el);
 
-      ir = &IntRules.Get(el.GetGeomType(), order);
-   }
-
-   elmat = 0.0;
    for (int i = 0; i < ir->GetNPoints(); i++)
    {
       const IntegrationPoint &ip = ir->IntPoint(i);
@@ -2024,26 +2022,12 @@ void CurlCurlIntegrator::AssembleElementMatrix2(const FiniteElement &trial_fe,
    te_curlshape_dFt.SetSize(te_nd,dimc);
 #endif
    elmat.SetSize(te_nd, tr_nd);
-
+   elmat = 0.0;
    if (MQ) { M.SetSize(dimc); }
    if (DQ) { D.SetSize(dimc); }
 
-   const IntegrationRule *ir = IntRule;
-   if (ir == NULL)
-   {
-      int order;
-      if (trial_fe.Space() == FunctionSpace::Pk)
-      {
-         order = test_fe.GetOrder() + trial_fe.GetOrder() - 2;
-      }
-      else
-      {
-         order = test_fe.GetOrder() + trial_fe.GetOrder() + trial_fe.GetDim() - 1;
-      }
-      ir = &IntRules.Get(trial_fe.GetGeomType(), order);
-   }
+   const IntegrationRule *ir = IntRule ? IntRule : &GetRule(trial_fe, test_fe);
 
-   elmat = 0.0;
    for (int i = 0; i < ir->GetNPoints(); i++)
    {
       const IntegrationPoint &ip = ir->IntPoint(i);
@@ -2079,10 +2063,10 @@ void CurlCurlIntegrator::AssembleElementMatrix2(const FiniteElement &trial_fe,
    }
 }
 
-void CurlCurlIntegrator
-::ComputeElementFlux(const FiniteElement &el, ElementTransformation &Trans,
-                     Vector &u, const FiniteElement &fluxelem, Vector &flux,
-                     bool with_coef, const IntegrationRule *ir)
+void CurlCurlIntegrator::ComputeElementFlux(
+   const FiniteElement &el, ElementTransformation &Trans,
+   Vector &u, const FiniteElement &fluxelem, Vector &flux,
+   bool with_coef, const IntegrationRule *ir)
 {
 #ifdef MFEM_THREAD_SAFE
    DenseMatrix projcurl;
@@ -2203,8 +2187,26 @@ double CurlCurlIntegrator::ComputeFluxEnergy(const FiniteElement &fluxelem,
    return energy;
 }
 
+const IntegrationRule &CurlCurlIntegrator::GetRule(
+   const FiniteElement &trial_fe,
+   const FiniteElement &test_fe)
+{
+   int order;
+   if (trial_fe.Space() == FunctionSpace::Pk)
+   {
+      order = test_fe.GetOrder() + trial_fe.GetOrder() - 2;
+   }
+   else
+   {
+      order = test_fe.GetOrder() + trial_fe.GetOrder() + trial_fe.GetDim() - 1;
+   }
+   return IntRules.Get(trial_fe.GetGeomType(), order);
+}
+
 void VectorCurlCurlIntegrator::AssembleElementMatrix(
-   const FiniteElement &el, ElementTransformation &Trans, DenseMatrix &elmat)
+   const FiniteElement &el,
+   ElementTransformation &Trans,
+   DenseMatrix &elmat)
 {
    int dim = el.GetDim();
    int dof = el.GetDof();
@@ -2419,13 +2421,7 @@ void VectorFEMassIntegrator::AssembleElementMatrix(
    elmat.SetSize(dof);
    elmat = 0.0;
 
-   const IntegrationRule *ir = IntRule;
-   if (ir == NULL)
-   {
-      // int order = 2 * el.GetOrder();
-      int order = Trans.OrderW() + 2 * el.GetOrder();
-      ir = &IntRules.Get(el.GetGeomType(), order);
-   }
+   const IntegrationRule *ir = IntRule ? IntRule : &GetRule(el, el, Trans);
 
    for (int i = 0; i < ir->GetNPoints(); i++)
    {
@@ -2487,15 +2483,11 @@ void VectorFEMassIntegrator::AssembleElementMatrix2(
 #endif
 
       elmat.SetSize(vdim*test_dof, trial_dof);
-
-      const IntegrationRule *ir = IntRule;
-      if (ir == NULL)
-      {
-         int order = (Trans.OrderW() + test_fe.GetOrder() + trial_fe.GetOrder());
-         ir = &IntRules.Get(test_fe.GetGeomType(), order);
-      }
-
       elmat = 0.0;
+
+      const IntegrationRule *ir = IntRule ? IntRule : &GetRule(trial_fe, test_fe,
+                                                               Trans);
+
       for (int i = 0; i < ir->GetNPoints(); i++)
       {
          const IntegrationPoint &ip = ir->IntPoint(i);
@@ -2588,12 +2580,8 @@ void VectorFEMassIntegrator::AssembleElementMatrix2(
 
       elmat.SetSize(test_dof, trial_dof);
 
-      const IntegrationRule *ir = IntRule;
-      if (ir == NULL)
-      {
-         int order = (Trans.OrderW() + test_fe.GetOrder() + trial_fe.GetOrder());
-         ir = &IntRules.Get(test_fe.GetGeomType(), order);
-      }
+      const IntegrationRule *ir = IntRule ? IntRule : &GetRule(trial_fe, test_fe,
+                                                               Trans);
 
       elmat = 0.0;
       for (int i = 0; i < ir->GetNPoints(); i++)
@@ -2634,6 +2622,15 @@ void VectorFEMassIntegrator::AssembleElementMatrix2(
       MFEM_ABORT("VectorFEMassIntegrator::AssembleElementMatrix2(...)\n"
                  "   is not implemented for given trial and test bases.");
    }
+}
+
+const IntegrationRule &VectorFEMassIntegrator::GetRule(
+   const FiniteElement &trial_fe,
+   const FiniteElement &test_fe,
+   ElementTransformation &Trans)
+{
+   int order = Trans.OrderW() + test_fe.GetOrder() + trial_fe.GetOrder();
+   return IntRules.Get(test_fe.GetGeomType(), order);
 }
 
 void VectorDivergenceIntegrator::AssembleElementMatrix2(
@@ -2709,15 +2706,9 @@ void DivDivIntegrator::AssembleElementMatrix(
    divshape.SetSize(dof);
 #endif
    elmat.SetSize(dof);
-
-   const IntegrationRule *ir = IntRule;
-   if (ir == NULL)
-   {
-      int order = 2 * el.GetOrder() - 2; // <--- OK for RTk
-      ir = &IntRules.Get(el.GetGeomType(), order);
-   }
-
    elmat = 0.0;
+
+   const IntegrationRule *ir = IntRule ? IntRule : &GetRule(el, el);
 
    for (int i = 0; i < ir->GetNPoints(); i++)
    {
@@ -2756,16 +2747,9 @@ void DivDivIntegrator::AssembleElementMatrix2(
    te_divshape.SetSize(te_nd);
 #endif
    elmat.SetSize(te_nd,tr_nd);
-
-   const IntegrationRule *ir = IntRule;
-   if (ir == NULL)
-   {
-      int order = 2 * max(test_fe.GetOrder(),
-                          trial_fe.GetOrder()) - 2; // <--- OK for RTk
-      ir = &IntRules.Get(test_fe.GetGeomType(), order);
-   }
-
    elmat = 0.0;
+
+   const IntegrationRule *ir = IntRule ? IntRule : &GetRule(trial_fe, test_fe);
 
    for (int i = 0; i < ir->GetNPoints(); i++)
    {
@@ -2785,6 +2769,15 @@ void DivDivIntegrator::AssembleElementMatrix2(
       te_divshape *= c;
       AddMultVWt(te_divshape, divshape, elmat);
    }
+}
+
+const IntegrationRule &DivDivIntegrator::GetRule(
+   const FiniteElement &trial_fe,
+   const FiniteElement &test_fe)
+{
+   // OK for RTk
+   int order = 2 * max(test_fe.GetOrder(), trial_fe.GetOrder()) - 2;
+   return IntRules.Get(test_fe.GetGeomType(), order);
 }
 
 void VectorDiffusionIntegrator::AssembleElementMatrix(
