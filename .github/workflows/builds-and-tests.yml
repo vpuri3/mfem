@@ -154,11 +154,10 @@ jobs:
       shell: bash
       run: |
         pwd
-        ls -lad "/c/Program Files"* || true
-        ls -la "/c/Program Files"* || true
-        ls -la "/c/Program Files"*/"Microsoft SDKs" || true
-        ls -lad "/c/Program Files"*/*MPI* || true
-        ls -lad "/c/Program Files"*/*/*MPI* || true
+        echo
+        ls -la || true
+        echo
+        ls -la * || true
         echo
         set
         false
