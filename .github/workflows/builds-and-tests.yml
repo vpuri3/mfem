@@ -153,11 +153,11 @@ jobs:
       if: matrix.os == 'windows-latest'
       shell: bash
       run: |
-        env
-        where dotnet
-        dotnet add package MSMPIsdk --version 10.1.12498.18
-        where "msmpi*" "mpi*"
-        env
+        pwd
+        ls -lad "/c/Program Files"*/*MPI*
+        ls -lad "/c/Program Files"*/*/*MPI*
+        echo
+        set
 
     # - name: get MPI (Windows)
     #   if: matrix.mpi == 'par' && matrix.os == 'windows-latest'
