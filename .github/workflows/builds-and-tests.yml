@@ -152,15 +152,21 @@ jobs:
     - name: get MPI (Windows)
       if: matrix.os == 'windows-latest'
       shell: bash
+      # msiexec.exe /i msmpisdk.msi /passive /qn
       run: |
         echo "Downloading msmpisdk.msi ..."
         curl -O "https://download.microsoft.com/download/a/5/2/a5207ca5-1203-491a-8fb8-906fd68ae623/msmpisdk.msi"
         echo
+        ls -la
+        echo
         echo "Installing msmpisdk.msi ..."
-        msiexec.exe /i msmpisdk.msi /quiet /qn
+        echo msiexec.exe /?
+        msiexec.exe /?
         echo
         echo "Downloading msmpisetup.exe ..."
         curl -O "https://download.microsoft.com/download/a/5/2/a5207ca5-1203-491a-8fb8-906fd68ae623/msmpisetup.exe"
+        echo
+        ls -la
         echo
         echo "Installing msmpisetup.exe ..."
         ./msmpisetup.exe -unattend -full
@@ -174,6 +180,7 @@ jobs:
         tail -4 $GITHUB_ENV
         echo "Added entries to GITHUB_PATH:"
         tail -1 $GITHUB_PATH
+        false
 
     # - name: get MPI (Windows)
     #   if: matrix.mpi == 'par' && matrix.os == 'windows-latest'
