@@ -149,11 +149,15 @@ jobs:
         export HOMEBREW_NO_INSTALL_CLEANUP=1
         brew install lcov
 
-    - name: MPI status (Windows)
+    - name: get MPI (Windows)
       if: matrix.os == 'windows-latest'
       shell: bash
       run: |
+        env
+        where dotnet
+        dotnet add package MSMPIsdk --version 10.1.12498.18
         where "msmpi*" "mpi*"
+        env
 
     # - name: get MPI (Windows)
     #   if: matrix.mpi == 'par' && matrix.os == 'windows-latest'
