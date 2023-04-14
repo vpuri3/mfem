@@ -154,17 +154,17 @@ jobs:
       shell: bash
       run: |
         echo "Downloading msmpisdk.msi ..."
-        curl -O "https://download.microsoft.com/download/a/5/2/a5207ca5-1203-491a-8fb8-906fd68ae623/msmpisdk.msi"
+        curl -sSO "https://download.microsoft.com/download/a/5/2/a5207ca5-1203-491a-8fb8-906fd68ae623/msmpisdk.msi"
         echo
-        ls -lA
+        ls -lA msmpisdk.msi
         echo
         echo "Installing msmpisdk.msi ..."
         msiexec.exe //i msmpisdk.msi //qn
         echo
         echo "Downloading msmpisetup.exe ..."
-        curl -O "https://download.microsoft.com/download/a/5/2/a5207ca5-1203-491a-8fb8-906fd68ae623/msmpisetup.exe"
+        curl -sSO "https://download.microsoft.com/download/a/5/2/a5207ca5-1203-491a-8fb8-906fd68ae623/msmpisetup.exe"
         echo
-        ls -lA
+        ls -lA msmpisetup.exe
         echo
         echo "Installing msmpisetup.exe ..."
         ./msmpisetup.exe -unattend -full
@@ -173,10 +173,7 @@ jobs:
         MSMPI_INC='C:\Program Files (x86)\Microsoft SDKs\MPI\Include\'
         MSMPI_LIB32='C:\Program Files (x86)\Microsoft SDKs\MPI\Lib\x86\'
         MSMPI_LIB64='C:\Program Files (x86)\Microsoft SDKs\MPI\Lib\x64\'
-        ls -lA "$MSMPI_BIN"
-        ls -lA "$MSMPI_INC"
-        ls -lA "$MSMPI_LIB32"
-        ls -lA "$MSMPI_LIB64"
+        ls -lAd "$MSMPI_BIN" "$MSMPI_INC" "$MSMPI_LIB32" "$MSMPI_LIB64"
         echo MSMPI_BIN="$MSMPI_BIN" >> $GITHUB_ENV
         echo MSMPI_INC="$MSMPI_INC" >> $GITHUB_ENV
         echo MSMPI_LIB32="$MSMPI_LIB32" >> $GITHUB_ENV
