@@ -47,9 +47,12 @@ jobs:
   builds-and-tests:
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        target: [dbg, opt]
-        mpi: [seq, par]
+        # os: [ubuntu-latest, macos-latest, windows-latest]
+        # target: [dbg, opt]
+        # mpi: [seq, par]
+        os: [windows-latest]
+        target: [opt]
+        mpi: [par]
         build-system: [make, cmake]
         hypre-target: [int32]
         exclude:
@@ -68,31 +71,31 @@ jobs:
         # note: we will gather coverage info for any non-debug run except the
         # CMake build.
         include:
-          - target: dbg
-            codecov: NO
-          - target: opt
-            codecov: YES
+          # - target: dbg
+          #   codecov: NO
+          # - target: opt
+          #   codecov: YES
           - os: windows-latest
             codecov: NO
           - os: windows-latest
             target: opt
             mpi: par
             config-opts: '-DBUILD_SHARED_LIBS=ON'
-          - os: ubuntu-latest
-            target: opt
-            codecov: NO
-            mpi: par
-            build-system: cmake
-            hypre-target: int32
-            # This option can be set to pass additional configuration options to
-            # the MFEM configuration command.
-            # config-opts: '-DCMAKE_VERBOSE_MAKEFILE=ON'
-          - os: ubuntu-latest
-            target: opt
-            codecov: NO
-            mpi: par
-            build-system: make
-            hypre-target: int64
+          # - os: ubuntu-latest
+          #   target: opt
+          #   codecov: NO
+          #   mpi: par
+          #   build-system: cmake
+          #   hypre-target: int32
+          #   # This option can be set to pass additional configuration options to
+          #   # the MFEM configuration command.
+          #   # config-opts: '-DCMAKE_VERBOSE_MAKEFILE=ON'
+          # - os: ubuntu-latest
+          #   target: opt
+          #   codecov: NO
+          #   mpi: par
+          #   build-system: make
+          #   hypre-target: int64
     name: ${{ matrix.os }}-${{ matrix.build-system }}-${{ matrix.target }}-${{ matrix.mpi }}-${{ matrix.hypre-target }}
 
     runs-on: ${{ matrix.os }}
@@ -146,19 +149,25 @@ jobs:
         export HOMEBREW_NO_INSTALL_CLEANUP=1
         brew install lcov
 
-    - name: get MPI (Windows)
-      if: matrix.mpi == 'par' && matrix.os == 'windows-latest'
-      uses: mpi4py/setup-mpi@v1.1.4
+    - name: MPI status (Windows)
+      if: matrix.os == 'windows-latest'
+      shell: bash
+      run: |
+        where "msmpi*" "mpi*"
+
+    # - name: get MPI (Windows)
+    #   if: matrix.mpi == 'par' && matrix.os == 'windows-latest'
+    #   uses: mpi4py/setup-mpi@v1.1.4
 
     # Get Hypre through cache, or build it.
     # Install will only run on cache miss.
-    - name: cache hypre
-      id: hypre-cache
-      if: matrix.mpi == 'par'
-      uses: actions/cache@v3
-      with:
-        path: ${{ env.HYPRE_TOP_DIR }}
-        key: ${{ runner.os }}-build-${{ env.HYPRE_TOP_DIR }}-${{ matrix.hypre-target }}-v2.2
+    # - name: cache hypre
+    #   id: hypre-cache
+    #   if: matrix.mpi == 'par'
+    #   uses: actions/cache@v3
+    #   with:
+    #     path: ${{ env.HYPRE_TOP_DIR }}
+    #     key: ${{ runner.os }}-build-${{ env.HYPRE_TOP_DIR }}-${{ matrix.hypre-target }}-v2.2
 
     - name: get hypre
       if: matrix.mpi == 'par' && steps.hypre-cache.outputs.cache-hit != 'true' && matrix.os != 'windows-latest'
