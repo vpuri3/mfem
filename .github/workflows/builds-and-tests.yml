@@ -152,7 +152,6 @@ jobs:
     - name: get MPI (Windows)
       if: matrix.os == 'windows-latest'
       shell: bash
-      # msiexec.exe /i msmpisdk.msi /passive /qn
       run: |
         echo "Downloading msmpisdk.msi ..."
         curl -O "https://download.microsoft.com/download/a/5/2/a5207ca5-1203-491a-8fb8-906fd68ae623/msmpisdk.msi"
@@ -160,8 +159,7 @@ jobs:
         ls -la
         echo
         echo "Installing msmpisdk.msi ..."
-        echo msiexec.exe /?
-        msiexec.exe /?
+        msiexec.exe //i msmpisdk.msi //qn
         echo
         echo "Downloading msmpisetup.exe ..."
         curl -O "https://download.microsoft.com/download/a/5/2/a5207ca5-1203-491a-8fb8-906fd68ae623/msmpisetup.exe"
