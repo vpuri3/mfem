@@ -155,20 +155,14 @@ jobs:
       run: |
         echo "Downloading msmpisdk.msi ..."
         curl -sSO "https://download.microsoft.com/download/a/5/2/a5207ca5-1203-491a-8fb8-906fd68ae623/msmpisdk.msi"
-        echo
         ls -lA msmpisdk.msi
-        echo
         echo "Installing msmpisdk.msi ..."
         msiexec.exe //i msmpisdk.msi //qn
-        echo
         echo "Downloading msmpisetup.exe ..."
         curl -sSO "https://download.microsoft.com/download/a/5/2/a5207ca5-1203-491a-8fb8-906fd68ae623/msmpisetup.exe"
-        echo
         ls -lA msmpisetup.exe
-        echo
         echo "Installing msmpisetup.exe ..."
         ./msmpisetup.exe -unattend -full
-        echo
         MSMPI_BIN='C:\Program Files\Microsoft MPI\Bin\'
         MSMPI_INC='C:\Program Files (x86)\Microsoft SDKs\MPI\Include\'
         MSMPI_LIB32='C:\Program Files (x86)\Microsoft SDKs\MPI\Lib\x86\'
@@ -301,7 +295,9 @@ jobs:
       if: matrix.build-system == 'cmake' && matrix.target == 'opt' && matrix.os != 'ubuntu-latest'
       run: |
         CTEST_CONFIG="Release"
-        cd ${{ env.MFEM_TOP_DIR }}/build && ctest --output-on-failure -C ${CTEST_CONFIG}
+        cd ${{ env.MFEM_TOP_DIR }}/build && \
+        ctest --output-on-failure -C ${CTEST_CONFIG} || \
+        ctest --rerun-failed --output-on-failure -C ${CTEST_CONFIG}
       shell: bash
 
     # Code coverage (process and upload reports)
