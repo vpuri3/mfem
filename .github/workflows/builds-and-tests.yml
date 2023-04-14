@@ -154,10 +154,14 @@ jobs:
       shell: bash
       run: |
         pwd
-        ls -lad "/c/Program Files"*/*MPI*
-        ls -lad "/c/Program Files"*/*/*MPI*
+        ls -lad "/c/Program Files"* || true
+        ls -la "/c/Program Files"* || true
+        ls -la "/c/Program Files"*/"Microsoft SDKs" || true
+        ls -lad "/c/Program Files"*/*MPI* || true
+        ls -lad "/c/Program Files"*/*/*MPI* || true
         echo
         set
+        false
 
     # - name: get MPI (Windows)
     #   if: matrix.mpi == 'par' && matrix.os == 'windows-latest'
