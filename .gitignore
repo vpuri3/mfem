@@ -367,3 +367,4 @@ run/results/
 
 # nvim clangd json through bear
 compiled_commands.json
+.cache
