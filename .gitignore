@@ -366,5 +366,5 @@ run/results/
 *.pvtu
 
 # nvim clangd json through bear
-compiled_commands.json
+compile_commands.json
 .cache
