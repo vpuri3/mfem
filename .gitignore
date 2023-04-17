@@ -359,3 +359,11 @@ pkg.gitcommit
 
 # Jupyter Notebook Checkpoints
 .ipynb_checkpoints
+
+# run
+run/results/
+*.vtu
+*.pvtu
+
+# nvim clangd json through bear
+compiled_commands.json
